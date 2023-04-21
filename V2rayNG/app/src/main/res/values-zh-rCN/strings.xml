@@ -44,10 +44,10 @@
     <string name="server_lab_network">传输协议(network)</string>
     <string name="server_lab_more_function">底层传输方式(transport)</string>
     <string name="server_lab_head_type">伪装类型(type)</string>
-    <string name="server_lab_mode_type">gRPC 传输模式 (mode)</string>
+    <string name="server_lab_mode_type">gRPC 传输模式(mode)</string>
     <string name="server_lab_request_host">伪装域名(host)(host/ws host/h2 host)/QUIC 加密方式</string>
     <string name="server_lab_path">path(ws path/h2 path)/QUIC 加密密钥/kcp seed/gRPC serviceName</string>
-    <string name="server_lab_stream_security">传输层安全(tls)</string>
+    <string name="server_lab_stream_security">传输层安全(TLS)</string>
     <string name="server_lab_allow_insecure">跳过证书验证(allowInsecure)</string>
     <string name="server_lab_sni">SNI</string>
     <string name="server_lab_address3">服务器地址</string>
@@ -56,7 +56,7 @@
     <string name="server_lab_security3">加密方式</string>
     <string name="server_lab_id4">密码(可选)</string>
     <string name="server_lab_security4">用户名(可选)</string>
-    <string name="server_lab_encryption">加密(encryption)</string>
+    <string name="server_lab_encryption">加密方式(encryption)</string>
     <string name="server_lab_flow">流控(flow)</string>
     <string name="toast_success">成功</string>
     <string name="toast_failure">失败</string>
@@ -146,6 +146,9 @@
     <string name="title_pref_confirm_remove">删除配置文件确认</string>
     <string name="summary_pref_confirm_remove">删除配置文件是否需要用户二次确认</string>
 
+    <string name="title_pref_start_scan_immediate">立即启动扫码</string>
+    <string name="summary_pref_start_scan_immediate">启动时立即打开相机扫描，否则可在工具栏选择扫码或选照片</string>
+
     <string name="title_pref_feedback">反馈</string>
     <string name="summary_pref_feedback">反馈改进或漏洞至 GitHub</string>
     <string name="summary_pref_tg_group">加入Telegram Group</string>
@@ -158,12 +161,14 @@
     <string name="title_mode">模式</string>
     <string name="title_mode_help">点此查看更多帮助</string>
     <string name="title_language">语言</string>
+    <string name="title_ui_settings">用户界面设置</string>
 
     <string name="title_logcat">Logcat</string>
     <string name="logcat_copy">复制</string>
     <string name="logcat_clear">清除</string>
     <string name="title_service_restart">服务重启</string>
     <string name="title_del_all_config">删除全部配置</string>
+    <string name="title_del_duplicate_config">删除重复配置</string>
     <string name="title_del_invalid_config">删除无效配置(先测试)</string>
     <string name="title_export_all">导出全部(非自定义)配置至剪贴板</string>
     <string name="title_sub_setting">订阅分组设置</string>
@@ -177,6 +182,7 @@
     <string name="title_sort_by_test_results">按测试结果排序</string>
     <string name="title_filter_config">过滤配置文件</string>
     <string name="filter_config_all">所有订阅分组</string>
+    <string name="title_del_duplicate_config_count">删除 %d 个重复配置</string>
 
     <string name="tasker_start_service">启动服务</string>
     <string name="tasker_setting_confirm">确定</string>

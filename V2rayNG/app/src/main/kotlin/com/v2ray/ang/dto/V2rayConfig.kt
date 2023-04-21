@@ -133,7 +133,7 @@ data class V2rayConfig(
                                       var realitySettings: TlsSettingsBean? = null,
                                       var grpcSettings: GrpcSettingsBean? = null,
                                       val dsSettings: Any? = null,
-                                      val sockopt: sockoptBean? = sockoptBean()
+                                      val sockopt: Any? = null
         ) {
 
             data class TcpSettingsBean(var header: HeaderBean = HeaderBean(),
@@ -194,7 +194,7 @@ data class V2rayConfig(
                                        var enableEch: Boolean = true,
                                        var echSetting: ECHSettingBean = ECHSettingBean(),
                     // REALITY settings
-                                       val show: Boolean = true,
+                                       val show: Boolean = false,
                                        var publicKey: String? = null,
                                        var shortId: String? = null,
                                        var spiderX: String? = null) {
@@ -457,7 +457,7 @@ data class V2rayConfig(
                            var poolSize: Int = 10000) // roughly 10 times smaller than total ip pool
 
     fun getProxyOutbound(): OutboundBean? {
-        outbounds.forEach { outbound ->
+        outbounds?.forEach { outbound ->
             EConfigType.values().forEach {
                 if (outbound.protocol.equals(it.name, true)) {
                     return outbound

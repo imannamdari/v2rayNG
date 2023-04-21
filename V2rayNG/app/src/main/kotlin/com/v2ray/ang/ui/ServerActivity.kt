@@ -109,7 +109,7 @@ class ServerActivity : BaseActivity() {
     private val et_public_key: EditText? by lazy { findViewById(R.id.et_public_key) }
     private val container_public_key: LinearLayout? by lazy { findViewById(R.id.l9) }
     private val et_short_id: EditText? by lazy { findViewById(R.id.et_short_id) }
-    private val container_short_id: LinearLayout? by lazy { findViewById(R.id.l11) }
+    private val container_short_id: LinearLayout? by lazy { findViewById(R.id.l10) }
     private val et_spider_x: EditText? by lazy { findViewById(R.id.et_spider_x) }
     private val container_spider_x: LinearLayout? by lazy { findViewById(R.id.l11) }
 
@@ -125,6 +125,7 @@ class ServerActivity : BaseActivity() {
             EConfigType.SOCKS -> setContentView(R.layout.activity_server_socks)
             EConfigType.VLESS -> setContentView(R.layout.activity_server_vless)
             EConfigType.TROJAN -> setContentView(R.layout.activity_server_trojan)
+            else -> setContentView(R.layout.activity_server_vmess)
         }
         sp_network?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
@@ -173,6 +174,7 @@ class ServerActivity : BaseActivity() {
                         container_spider_x?.visibility = View.GONE
                     } else {
                         container_allow_insecure?.visibility = View.GONE
+                        container_alpn?.visibility = View.GONE
                         container_enable_ech?.visibility = View.GONE
                         container_ech_dns?.visibility = View.GONE
                         container_public_key?.visibility = View.VISIBLE
@@ -418,8 +420,8 @@ class ServerActivity : BaseActivity() {
         val enableECHField = sp_enable_ech?.selectedItemPosition ?: return
         val echDNSField = et_ech_dns?.text?.toString()?.trim() ?: return
         val streamSecurity = sp_stream_security?.selectedItemPosition ?: return
-        var utlsIndex = sp_stream_fingerprint?.selectedItemPosition ?: return
-        var alpnIndex = sp_stream_alpn?.selectedItemPosition ?: return
+        val utlsIndex = sp_stream_fingerprint?.selectedItemPosition ?: return
+        val alpnIndex = sp_stream_alpn?.selectedItemPosition ?: return
         val publicKey = et_public_key?.text?.toString()?.trim() ?: return
         val shortId = et_short_id?.text?.toString()?.trim() ?: return
         val spiderX = et_spider_x?.text?.toString()?.trim() ?: return
@@ -465,14 +467,19 @@ class ServerActivity : BaseActivity() {
     }
 
     private fun transportTypes(network: String?): Array<out String> {
-        return if (network == "tcp") {
-            tcpTypes
-        } else if (network == "kcp" || network == "quic") {
-            kcpAndQuicTypes
-        } else if (network == "grpc") {
-            grpcModes
-        } else {
-            arrayOf("---")
+        return when (network) {
+            "tcp" -> {
+                tcpTypes
+            }
+            "kcp", "quic" -> {
+                kcpAndQuicTypes
+            }
+            "grpc" -> {
+                grpcModes
+            }
+            else -> {
+                arrayOf("---")
+            }
         }
     }
 
@@ -481,7 +488,7 @@ class ServerActivity : BaseActivity() {
      */
     private fun deleteServer(): Boolean {
         if (editGuid.isNotEmpty()) {
-            if (editGuid != mainStorage?.decodeString(MmkvManager.KEY_SELECTED_SERVER)) {
+            if (editGuid != mainStorage?.decodeString(KEY_SELECTED_SERVER)) {
                 if (settingsStorage?.decodeBool(AppConfig.PREF_CONFIRM_REMOVE) == true) {
                     AlertDialog.Builder(this).setMessage(R.string.del_config_comfirm)
                         .setPositiveButton(android.R.string.ok) { _, _ ->

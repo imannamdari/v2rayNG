@@ -14,6 +14,7 @@ import android.text.TextUtils
 import android.view.KeyEvent
 import com.v2ray.ang.AppConfig
 import android.content.res.ColorStateList
+import android.os.Build
 import com.google.android.material.navigation.NavigationView
 import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
@@ -107,6 +108,15 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         setupViewModel()
         copyAssets()
         migrateLegacy()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            RxPermissions(this)
+                .request(Manifest.permission.POST_NOTIFICATIONS)
+                .subscribe {
+                    if (!it)
+                        toast(R.string.toast_permission_denied)
+                }
+        }
     }
 
     private fun setupViewModel() {
@@ -297,7 +307,14 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
                     .show()
             true
         }
-
+        R.id.del_duplicate_config-> {
+            AlertDialog.Builder(this).setMessage(R.string.del_config_comfirm)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    mainViewModel.removeDuplicateServer()
+                }
+                .show()
+            true
+        }
         R.id.del_invalid_config -> {
             AlertDialog.Builder(this).setMessage(R.string.del_config_comfirm)
                 .setPositiveButton(android.R.string.ok) { _, _ ->
@@ -620,11 +637,13 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
             binding.drawerLayout.closeDrawer(GravityCompat.START)
         } else {
-            super.onBackPressed()
+            //super.onBackPressed()
+            onBackPressedDispatcher.onBackPressed()
         }
     }
 

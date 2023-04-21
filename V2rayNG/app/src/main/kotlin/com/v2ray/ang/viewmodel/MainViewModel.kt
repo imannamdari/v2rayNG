@@ -74,8 +74,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         config.fullConfig = Gson().fromJson(server, V2rayConfig::class.java)
         val key = MmkvManager.encodeServerConfig("", config)
         serverRawStorage?.encode(key, server)
-        serverList.add(key)
-        serversCache.add(ServersCache(key,config))
+        serverList.add(0, key)
+        serversCache.add(0, ServersCache(key,config))
     }
 
     fun swapServer(fromPosition: Int, toPosition: Int) {
@@ -199,6 +199,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 return index
         }
         return -1
+    }
+
+    fun removeDuplicateServer() {
+        val deleteServer = mutableListOf<String>()
+        serversCache.forEachIndexed { index, it ->
+            val outbound = it.config.getProxyOutbound()
+            serversCache.forEachIndexed { index2, it2 ->
+                if(index2 > index){
+                    val outbound2 = it2.config.getProxyOutbound()
+                    if( outbound == outbound2 && !deleteServer.contains(it2.guid))
+                    {
+                        deleteServer.add(it2.guid)
+                    }
+                }
+            }
+        }
+        for(it in deleteServer){
+            MmkvManager.removeServer(it)
+        }
+        reloadServerList()
+        getApplication<AngApplication>().toast(getApplication<AngApplication>().getString(R.string.title_del_duplicate_config_count, deleteServer.count()))
     }
 
     private val mMsgReceiver = object : BroadcastReceiver() {

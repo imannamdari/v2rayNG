@@ -343,8 +343,11 @@ object AngConfigManager {
                         queryParam["host"], queryParam["path"], queryParam["seed"], queryParam["quicSecurity"], queryParam["key"],
                         queryParam["mode"], queryParam["serviceName"])
                 fingerprint = queryParam["fp"] ?: ""
+                val pbk = queryParam["pbk"] ?: ""
+                val sid = queryParam["sid"] ?: ""
+                val spx =  Utils.urlDecode(queryParam["spx"] ?: "")
                 streamSetting.populateTlsSettings(queryParam["security"] ?: "", allowInsecure,
-                        queryParam["sni"] ?: sni, "", fingerprint, queryParam["alpn"], false, "", null, null, null)
+                        queryParam["sni"] ?: sni, "", fingerprint, queryParam["alpn"], false, "", pbk, sid, spx)
             }
             if (config == null){
                 return R.string.toast_incorrect_protocol
@@ -548,6 +551,15 @@ object AngConfigManager {
                         if (!TextUtils.isEmpty(tlsSetting.fingerprint)) {
                             dicQuery["fp"] = tlsSetting.fingerprint!!
                         }
+                        if (!TextUtils.isEmpty(tlsSetting.publicKey)) {
+                            dicQuery["pbk"] = tlsSetting.publicKey!!
+                        }
+                        if (!TextUtils.isEmpty(tlsSetting.shortId)) {
+                            dicQuery["sid"] = tlsSetting.shortId!!
+                        }
+                        if (!TextUtils.isEmpty(tlsSetting.spiderX)) {
+                            dicQuery["spx"] = Utils.urlEncode(tlsSetting.spiderX!!)
+                        }
                     }
                     dicQuery["type"] = streamSetting.network.ifEmpty { V2rayConfig.DEFAULT_NETWORK }
 
@@ -662,7 +674,7 @@ object AngConfigManager {
             if (TextUtils.isEmpty(conf)) {
                 return null
             }
-            return Utils.createQRCode(conf)
+            return QRCodeDecoder.createQRCode(conf)
 
         } catch (e: Exception) {
             e.printStackTrace()
@@ -748,6 +760,7 @@ object AngConfigManager {
 
             var count = 0
             servers.lines()
+                    .reversed()
                     .forEach {
                         val resId = importConfig(it, subid, removedSelectedServer)
                         if (resId == 0) {

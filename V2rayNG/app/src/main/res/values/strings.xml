@@ -48,9 +48,9 @@
     <string name="server_lab_mode_type">gRPC mode</string>
     <string name="server_lab_request_host">request host(host/ws host/h2 host)/QUIC security</string>
     <string name="server_lab_path">path(ws path/h2 path)/QUIC key/kcp seed/gRPC serviceName</string>
-    <string name="server_lab_stream_security">tls</string>
-    <string name="server_lab_stream_fingerprint" translatable="false">uTLS</string>
-    <string name="server_lab_stream_alpn" translatable="false">alpn</string>
+    <string name="server_lab_stream_security">TLS</string>
+    <string name="server_lab_stream_fingerprint" translatable="false">Fingerprint</string>
+    <string name="server_lab_stream_alpn" translatable="false">Alpn</string>
     <string name="server_lab_allow_insecure">allowInsecure</string>
     <string name="server_lab_sni">SNI</string>
     <string name="server_lab_address3">address</string>
@@ -61,9 +61,9 @@
     <string name="server_lab_security4">User(Optional)</string>
     <string name="server_lab_encryption">encryption</string>
     <string name="server_lab_flow">flow</string>
-    <string name="server_lab_public_key">public key</string>
-    <string name="server_lab_short_id">short Id</string>
-    <string name="server_lab_spider_x">spiderX</string>
+    <string name="server_lab_public_key" translatable="false">PublicKey</string>
+    <string name="server_lab_short_id" translatable="false">ShortId</string>
+    <string name="server_lab_spider_x" translatable="false">SpiderX</string>
     <string name="toast_success">Success</string>
     <string name="toast_failure">Failure</string>
     <string name="toast_none_data">There is nothing</string>
@@ -154,6 +154,9 @@
     <string name="title_pref_confirm_remove">Delete configuration file confirmation</string>
     <string name="summary_pref_confirm_remove">Whether to delete the configuration file requires a second confirmation by the user</string>
 
+    <string name="title_pref_start_scan_immediate">Start scanning immediately</string>
+    <string name="summary_pref_start_scan_immediate">Open the camera to scan immediately at startup, otherwise you can choose to scan the code or select a photo in the toolbar</string>
+
     <string name="title_pref_feedback">Feedback</string>
     <string name="summary_pref_feedback">Feedback enhancements or bugs to GitHub</string>
     <string name="summary_pref_tg_group">Join Telegram Group</string>
@@ -166,12 +169,14 @@
     <string name="title_mode">Mode</string>
     <string name="title_mode_help">Click me for more help</string>
     <string name="title_language">Language</string>
+    <string name="title_ui_settings">UI settings</string>
 
     <string name="title_logcat">Logcat</string>
     <string name="logcat_copy">Copy</string>
     <string name="logcat_clear">Clear</string>
     <string name="title_service_restart">Service restart</string>
     <string name="title_del_all_config">Delete all config</string>
+    <string name="title_del_duplicate_config">Delete duplicate config</string>
     <string name="title_del_invalid_config">Delete invalid config(Test first)</string>
     <string name="title_export_all">Export non-custom configs to clipboard</string>
     <string name="title_sub_setting">Subscription group setting</string>
@@ -185,6 +190,7 @@
     <string name="title_sort_by_test_results">Sorting by test results</string>
     <string name="title_filter_config">Filter configuration file</string>
     <string name="filter_config_all">All subscription groups</string>
+    <string name="title_del_duplicate_config_count">Delete %d duplicate configurations</string>
 
     <string name="tasker_start_service">Start Service</string>
     <string name="tasker_setting_confirm">Confirm</string>
@@ -205,9 +211,9 @@
     <string name="connection_test_error_status_code">Error code: #%d</string>
     <string name="connection_connected">Connected, tap to check connection</string>
     <string name="connection_not_connected">Not connected</string>
-    <string name="server_lab_enable_ech">enable_ech</string>
-    <string name="server_lab_ech_dns">ech_dns</string>
-    <string name="server_lab_server_ip">server_ip</string>
+    <string name="server_lab_enable_ech" translatable="false">enable_ech</string>
+    <string name="server_lab_ech_dns" translatable="false">ech_dns</string>
+    <string name="server_lab_server_ip" translatable="false">server_ip</string>
 
     <string-array name="share_method">
         <item>QRcode</item>
