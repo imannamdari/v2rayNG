@@ -464,6 +464,10 @@ class ServerActivity : BaseActivity() {
                 shortId = shortId,
                 spiderX = spiderX
         )
+
+        if (serverIPField != "") {
+            streamSetting.sockopt = V2rayConfig.OutboundBean.StreamSettingsBean.sockoptBean()
+        }
     }
 
     private fun transportTypes(network: String?): Array<out String> {

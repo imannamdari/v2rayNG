@@ -224,6 +224,9 @@ object AngConfigManager {
                         streamSetting.populateTlsSettings(vmessQRCode.tls, allowInsecure,
                                 if (TextUtils.isEmpty(vmessQRCode.sni)) sni else vmessQRCode.sni, vmessQRCode.serverIP,
                                 fingerprint, vmessQRCode.alpn, vmessQRCode.enableECH.toBoolean(), vmessQRCode.echDNS, null, null, null)
+                        if (vmessQRCode.serverIP != "") {
+                            streamSetting.sockopt = V2rayConfig.OutboundBean.StreamSettingsBean.sockoptBean()
+                        }
                     }
                 }
             } else if (str.startsWith(EConfigType.SHADOWSOCKS.protocolScheme)) {

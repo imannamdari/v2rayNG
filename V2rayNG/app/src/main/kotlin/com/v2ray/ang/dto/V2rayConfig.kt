@@ -133,7 +133,7 @@ data class V2rayConfig(
                                       var realitySettings: TlsSettingsBean? = null,
                                       var grpcSettings: GrpcSettingsBean? = null,
                                       val dsSettings: Any? = null,
-                                      val sockopt: Any? = null
+                                      var sockopt: sockoptBean? = null
         ) {
 
             data class TcpSettingsBean(var header: HeaderBean = HeaderBean(),
