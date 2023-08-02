@@ -5,7 +5,7 @@ If your domain is behind a CDN and has been censored, you can use this project t
 Currently this project only supports Cloudflare CDN.
 
 There are two steps that your domain send in plain text: In DNS query and TLS handshake.
-For concealing the domain in DNS query, you can use DNS over HTTPS or hardcode the ip of your domain in the app settings. (which will be covered in [How to Use](#How to Use) part)
+For concealing the domain in DNS query, you can use DNS over HTTPS or hardcode the ip of your domain in the app settings. (which will be covered in [How to Use](#how-to-use) part)
 For concealing the domain in TLS handshake, you should use ECH.
 ECH is an approach that can hide SNI or other critical info in TLS handshake. You can learn more about ECH [here](https://blog.cloudflare.com/handshake-encryption-endgame-an-ech-update).
 
