@@ -1,34 +1,34 @@
 package com.v2ray.ang.util
 
+import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.text.Editable
-import android.util.Base64
-import java.util.*
-import android.content.ClipData
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration.UI_MODE_NIGHT_MASK
-import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.net.Uri
 import android.os.Build
 import android.os.LocaleList
+import android.provider.Settings
+import android.text.Editable
+import android.util.Base64
 import android.util.Log
 import android.util.Patterns
 import android.webkit.URLUtil
-import com.tencent.mmkv.MMKV
+import androidx.appcompat.app.AppCompatDelegate
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.AppConfig.ANG_PACKAGE
 import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.extension.toast
-import java.net.*
 import com.v2ray.ang.service.V2RayServiceManager
+import com.v2ray.ang.util.MmkvManager.settingsStorage
 import java.io.IOException
+import java.net.*
+import java.util.*
 
 object Utils {
-
-    private val mainStorage by lazy { MMKV.mmkvWithID(MmkvManager.ID_MAIN, MMKV.MULTI_PROCESS_MODE) }
-    private val settingsStorage by lazy { MMKV.mmkvWithID(MmkvManager.ID_SETTING, MMKV.MULTI_PROCESS_MODE) }
 
     /**
      * convert string to editalbe for kotlin
@@ -36,8 +36,8 @@ object Utils {
      * @param text
      * @return
      */
-    fun getEditable(text: String): Editable {
-        return Editable.Factory.getInstance().newEditable(text)
+    fun getEditable(text: String?): Editable {
+        return Editable.Factory.getInstance().newEditable(text.orEmpty())
     }
 
     /**
@@ -60,14 +60,9 @@ object Utils {
     }
 
     fun parseInt(str: String?, default: Int): Int {
-        str ?: return default
-        return try {
-            Integer.parseInt(str)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            default
-        }
+        return str?.toIntOrNull() ?: default
     }
+
 
     /**
      * get text from clipboard
@@ -98,23 +93,19 @@ object Utils {
     /**
      * base64 decode
      */
-    fun decode(text: String): String {
-        tryDecodeBase64(text)?.let { return it }
-        if (text.endsWith('=')) {
-            // try again for some loosely formatted base64
-            tryDecodeBase64(text.trimEnd('='))?.let { return it }
-        }
-        return ""
+    fun decode(text: String?): String {
+        return tryDecodeBase64(text) ?: text?.trimEnd('=')?.let { tryDecodeBase64(it) }.orEmpty()
     }
 
-    fun tryDecodeBase64(text: String): String? {
+
+    fun tryDecodeBase64(text: String?): String? {
         try {
-            return Base64.decode(text, Base64.NO_WRAP).toString(charset("UTF-8"))
+            return Base64.decode(text, Base64.NO_WRAP).toString(Charsets.UTF_8)
         } catch (e: Exception) {
             Log.i(ANG_PACKAGE, "Parse base64 standard failed $e")
         }
         try {
-            return Base64.decode(text, Base64.NO_WRAP.or(Base64.URL_SAFE)).toString(charset("UTF-8"))
+            return Base64.decode(text, Base64.NO_WRAP.or(Base64.URL_SAFE)).toString(Charsets.UTF_8)
         } catch (e: Exception) {
             Log.i(ANG_PACKAGE, "Parse base64 url safe failed $e")
         }
@@ -126,7 +117,7 @@ object Utils {
      */
     fun encode(text: String): String {
         return try {
-            Base64.encodeToString(text.toByteArray(charset("UTF-8")), Base64.NO_WRAP)
+            Base64.encodeToString(text.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
         } catch (e: Exception) {
             e.printStackTrace()
             ""
@@ -137,18 +128,16 @@ object Utils {
      * get remote dns servers from preference
      */
     fun getRemoteDnsServers(): List<String> {
-        val remoteDns = settingsStorage?.decodeString(AppConfig.PREF_REMOTE_DNS) ?: AppConfig.DNS_AGENT
+        val remoteDns = settingsStorage?.decodeString(AppConfig.PREF_REMOTE_DNS) ?: AppConfig.DNS_PROXY
         val ret = remoteDns.split(",").filter { isPureIpAddress(it) || isCoreDNSAddress(it) }
         if (ret.isEmpty()) {
-            return listOf(AppConfig.DNS_AGENT)
+            return listOf(AppConfig.DNS_PROXY)
         }
         return ret
     }
 
     fun getVpnDnsServers(): List<String> {
-        val vpnDns = settingsStorage?.decodeString(AppConfig.PREF_VPN_DNS)
-                ?: settingsStorage?.decodeString(AppConfig.PREF_REMOTE_DNS)
-                ?: AppConfig.DNS_AGENT
+        val vpnDns = settingsStorage?.decodeString(AppConfig.PREF_VPN_DNS) ?: AppConfig.DNS_VPN
         return vpnDns.split(",").filter { isPureIpAddress(it) }
         // allow empty, in that case dns will use system default
     }
@@ -177,7 +166,7 @@ object Utils {
             //CIDR
             if (addr.indexOf("/") > 0) {
                 val arr = addr.split("/")
-                if (arr.count() == 2 && Integer.parseInt(arr[1]) > 0) {
+                if (arr.count() == 2 && Integer.parseInt(arr[1]) > -1) {
                     addr = arr[0]
                 }
             }
@@ -208,11 +197,12 @@ object Utils {
     }
 
     fun isPureIpAddress(value: String): Boolean {
-        return (isIpv4Address(value) || isIpv6Address(value))
+        return isIpv4Address(value) || isIpv6Address(value)
     }
 
     fun isIpv4Address(value: String): Boolean {
-        val regV4 = Regex("^([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\\.([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\\.([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\\.([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])$")
+        val regV4 =
+            Regex("^([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\\.([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\\.([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\\.([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])$")
         return regV4.matches(value)
     }
 
@@ -222,12 +212,13 @@ object Utils {
             addr = addr.drop(1)
             addr = addr.dropLast(addr.count() - addr.lastIndexOf("]"))
         }
-        val regV6 = Regex("^((?:[0-9A-Fa-f]{1,4}))?((?::[0-9A-Fa-f]{1,4}))*::((?:[0-9A-Fa-f]{1,4}))?((?::[0-9A-Fa-f]{1,4}))*|((?:[0-9A-Fa-f]{1,4}))((?::[0-9A-Fa-f]{1,4})){7}$")
+        val regV6 =
+            Regex("^((?:[0-9A-Fa-f]{1,4}))?((?::[0-9A-Fa-f]{1,4}))*::((?:[0-9A-Fa-f]{1,4}))?((?::[0-9A-Fa-f]{1,4}))*|((?:[0-9A-Fa-f]{1,4}))((?::[0-9A-Fa-f]{1,4})){7}$")
         return regV6.matches(addr)
     }
 
     private fun isCoreDNSAddress(s: String): Boolean {
-        return s.startsWith("https") || s.startsWith("tcp") || s.startsWith("quic")
+        return s.startsWith("https") || s.startsWith("tcp") || s.startsWith("quic") || s == "localhost"
     }
 
     /**
@@ -235,7 +226,13 @@ object Utils {
      */
     fun isValidUrl(value: String?): Boolean {
         try {
-            if (value != null && Patterns.WEB_URL.matcher(value).matches() || URLUtil.isValidUrl(value)) {
+            if (value.isNullOrEmpty()) {
+                return false
+            }
+            if (Patterns.WEB_URL.matcher(value).matches()
+                || Patterns.DOMAIN_NAME.matcher(value).matches()
+                || URLUtil.isValidUrl(value)
+            ) {
                 return true
             }
         } catch (e: Exception) {
@@ -246,7 +243,7 @@ object Utils {
     }
 
     fun startVServiceFromToggle(context: Context): Boolean {
-        if (mainStorage?.decodeString(MmkvManager.KEY_SELECTED_SERVER).isNullOrEmpty()) {
+        if (MmkvManager.getSelectServer().isNullOrEmpty()) {
             context.toast(R.string.app_tile_first_use)
             return false
         }
@@ -281,7 +278,7 @@ object Utils {
 
     fun urlDecode(url: String): String {
         return try {
-            URLDecoder.decode(URLDecoder.decode(url), "utf-8")
+            URLDecoder.decode(url, Charsets.UTF_8.toString())
         } catch (e: Exception) {
             e.printStackTrace()
             url
@@ -290,7 +287,7 @@ object Utils {
 
     fun urlEncode(url: String): String {
         return try {
-            URLEncoder.encode(url, "UTF-8")
+            URLEncoder.encode(url, Charsets.UTF_8.toString())
         } catch (e: Exception) {
             e.printStackTrace()
             url
@@ -301,7 +298,10 @@ object Utils {
     /**
      * readTextFromAssets
      */
-    fun readTextFromAssets(context: Context, fileName: String): String {
+    fun readTextFromAssets(context: Context?, fileName: String): String {
+        if (context == null) {
+            return ""
+        }
         val content = context.assets.open(fileName).bufferedReader().use {
             it.readText()
         }
@@ -312,8 +312,21 @@ object Utils {
         if (context == null)
             return ""
         val extDir = context.getExternalFilesDir(AppConfig.DIR_ASSETS)
-                ?: return context.getDir(AppConfig.DIR_ASSETS, 0).absolutePath
+            ?: return context.getDir(AppConfig.DIR_ASSETS, 0).absolutePath
         return extDir.absolutePath
+    }
+
+    fun backupPath(context: Context?): String {
+        if (context == null)
+            return ""
+        val extDir = context.getExternalFilesDir(AppConfig.DIR_BACKUPS)
+            ?: return context.getDir(AppConfig.DIR_BACKUPS, 0).absolutePath
+        return extDir.absolutePath
+    }
+
+    fun getDeviceIdForXUDPBaseKey(): String {
+        val androidId = Settings.Secure.ANDROID_ID.toByteArray(Charsets.UTF_8)
+        return Base64.encodeToString(androidId.copyOf(32), Base64.NO_PADDING.or(Base64.URL_SAFE))
     }
 
     fun getUrlContext(url: String, timeout: Int): String {
@@ -338,14 +351,27 @@ object Utils {
     }
 
     @Throws(IOException::class)
-    fun getUrlContentWithCustomUserAgent(urlStr: String?): String {
+    fun getUrlContentWithCustomUserAgent(urlStr: String?, timeout: Int = 30000, httpPort: Int = 0): String {
         val url = URL(urlStr)
-        val conn = url.openConnection()
+        val conn = if (httpPort == 0) {
+            url.openConnection()
+        } else {
+            url.openConnection(
+                Proxy(
+                    Proxy.Type.HTTP,
+                    InetSocketAddress("127.0.0.1", httpPort)
+                )
+            )
+        }
+        conn.connectTimeout = timeout
+        conn.readTimeout = timeout
         conn.setRequestProperty("Connection", "close")
         conn.setRequestProperty("User-agent", "v2rayNG/${BuildConfig.VERSION_NAME}")
         url.userInfo?.let {
-            conn.setRequestProperty("Authorization",
-                "Basic ${encode(urlDecode(it))}")
+            conn.setRequestProperty(
+                "Authorization",
+                "Basic ${encode(urlDecode(it))}"
+            )
         }
         conn.useCaches = false
         return conn.inputStream.use {
@@ -354,29 +380,44 @@ object Utils {
     }
 
     fun getDarkModeStatus(context: Context): Boolean {
-        val mode = context.resources.configuration.uiMode and UI_MODE_NIGHT_MASK
-        return mode == UI_MODE_NIGHT_YES
+        return context.resources.configuration.uiMode and UI_MODE_NIGHT_MASK != UI_MODE_NIGHT_NO
     }
 
-    fun getIpv6Address(address: String): String {
-        return if (isIpv6Address(address)) {
+
+    fun setNightMode(context: Context) {
+        when (settingsStorage?.decodeString(AppConfig.PREF_UI_MODE_NIGHT, "0")) {
+            "0" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+            "1" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+            "2" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+        }
+    }
+
+    fun getIpv6Address(address: String?): String {
+        if (address == null) {
+            return ""
+        }
+        return if (isIpv6Address(address) && !address.contains('[') && !address.contains(']')) {
             String.format("[%s]", address)
         } else {
             address
         }
     }
 
-    fun getLocale(context: Context): Locale =
-        when (settingsStorage?.decodeString(AppConfig.PREF_LANGUAGE) ?: "auto") {
-            "auto" ->  getSysLocale()
-            "en" -> Locale("en")
-            "zh-rCN" -> Locale("zh", "CN")
-            "zh-rTW" -> Locale("zh", "TW")
+    fun getLocale(): Locale {
+        val lang = settingsStorage?.decodeString(AppConfig.PREF_LANGUAGE) ?: "auto"
+        return when (lang) {
+            "auto" -> getSysLocale()
+            "en" -> Locale.ENGLISH
+            "zh-rCN" -> Locale.CHINA
+            "zh-rTW" -> Locale.TRADITIONAL_CHINESE
             "vi" -> Locale("vi")
             "ru" -> Locale("ru")
             "fa" -> Locale("fa")
+            "bn" -> Locale("bn")
             else -> getSysLocale()
         }
+    }
+
 
     private fun getSysLocale(): Locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
         LocaleList.getDefault()[0]
@@ -386,8 +427,8 @@ object Utils {
 
     fun fixIllegalUrl(str: String): String {
         return str
-            .replace(" ","%20")
-            .replace("|","%7C")
+            .replace(" ", "%20")
+            .replace("|", "%7C")
     }
 
     fun removeWhiteSpace(str: String?): String? {
@@ -399,5 +440,18 @@ object Utils {
         return URL(url.protocol, IDN.toASCII(url.host, IDN.ALLOW_UNASSIGNED), url.port, url.file)
             .toExternalForm()
     }
+
+    fun isTv(context: Context): Boolean =
+        context.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+
+    fun getDelayTestUrl(second: Boolean = false): String {
+        return if (second) {
+            AppConfig.DelayTestUrl2
+        } else {
+            settingsStorage.decodeString(AppConfig.PREF_DELAY_TEST_URL) ?: AppConfig.DelayTestUrl
+        }
+    }
+
+
 }
 

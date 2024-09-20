@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-    <LinearLayout
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
     android:layout_marginTop="@dimen/activity_horizontal_margin"
-        android:orientation="vertical">
+    android:orientation="vertical">
 
     <LinearLayout
         android:id="@+id/l1"
@@ -27,6 +27,7 @@
             android:nextFocusDown="@+id/et_sni" />
 
     </LinearLayout>
+
     <LinearLayout
         android:id="@+id/l2"
         android:layout_width="match_parent"
@@ -47,12 +48,13 @@
             android:nextFocusDown="@+id/sp_stream_fingerprint" />
 
     </LinearLayout>
+
     <LinearLayout
         android:id="@+id/l3"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginBottom="@dimen/activity_horizontal_margin">
+        android:layout_marginBottom="@dimen/activity_horizontal_margin"
+        android:orientation="vertical">
 
         <TextView
             android:layout_width="wrap_content"
@@ -67,12 +69,13 @@
             android:nextFocusDown="@+id/sp_stream_alpn" />
 
     </LinearLayout>
+
     <LinearLayout
         android:id="@+id/l4"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginBottom="@dimen/activity_horizontal_margin">
+        android:layout_marginBottom="@dimen/activity_horizontal_margin"
+        android:orientation="vertical">
 
         <TextView
             android:layout_width="wrap_content"
@@ -87,11 +90,12 @@
             android:nextFocusDown="@+id/sp_allow_insecure" />
 
     </LinearLayout>
+
     <LinearLayout
         android:id="@+id/l5"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical" >
+        android:orientation="vertical">
 
         <TextView
             android:layout_width="wrap_content"
@@ -107,64 +111,6 @@
 
     <LinearLayout
         android:id="@+id/l6"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/server_lab_enable_ech" />
-
-        <Spinner
-            android:id="@+id/sp_enable_ech"
-            android:layout_width="match_parent"
-            android:layout_height="@dimen/edit_height"
-            android:entries="@array/enableech" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/l7"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/server_lab_ech_dns" />
-
-        <EditText
-            android:id="@+id/et_ech_dns"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="text"
-            android:nextFocusDown="@id/sp_stream_fingerprint" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/l8"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/server_lab_server_ip" />
-
-        <EditText
-            android:id="@+id/et_server_ip"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="text"
-            android:nextFocusDown="@id/sp_stream_fingerprint" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/l9"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/activity_horizontal_margin"
@@ -185,7 +131,7 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/l10"
+        android:id="@+id/l7"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/activity_horizontal_margin"
@@ -204,8 +150,9 @@
             android:nextFocusDown="@+id/sp_stream_fingerprint" />
 
     </LinearLayout>
+
     <LinearLayout
-        android:id="@+id/l11"
+        android:id="@+id/l8"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/activity_horizontal_margin"
@@ -222,6 +169,65 @@
             android:layout_height="@dimen/edit_height"
             android:inputType="text"
             android:nextFocusDown="@+id/sp_stream_fingerprint" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/l9"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/server_lab_enable_ech"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/server_lab_enable_ech" />
+
+        <Spinner
+            android:id="@+id/sp_enable_ech"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:entries="@array/enablech" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/l10"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/server_lab_ech_dns" />
+
+        <EditText
+            android:id="@+id/et_ech_dns"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="text" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/l11"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/server_lab_server_ip" />
+
+        <EditText
+            android:id="@+id/et_server_ip"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="text" />
 
     </LinearLayout>
 

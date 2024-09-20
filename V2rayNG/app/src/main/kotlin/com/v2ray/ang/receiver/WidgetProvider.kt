@@ -8,8 +8,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.widget.RemoteViews
-import com.v2ray.ang.R
 import com.v2ray.ang.AppConfig
+import com.v2ray.ang.R
 import com.v2ray.ang.service.V2RayServiceManager
 import com.v2ray.ang.util.Utils
 
@@ -35,20 +35,15 @@ class WidgetProvider : AppWidgetProvider() {
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             } else {
                 PendingIntent.FLAG_UPDATE_CURRENT
-            })
+            }
+        )
         remoteViews.setOnClickPendingIntent(R.id.layout_switch, pendingIntent)
         if (isRunning) {
-            remoteViews.setInt(
-                R.id.layout_switch,
-                "setBackgroundResource",
-                R.drawable.ic_rounded_corner_theme
-            )
+            remoteViews.setInt(R.id.image_switch, "setImageResource", R.drawable.ic_stop_24dp)
+            remoteViews.setInt(R.id.layout_background, "setBackgroundResource", R.drawable.ic_rounded_corner_active)
         } else {
-            remoteViews.setInt(
-                R.id.layout_switch,
-                "setBackgroundResource",
-                R.drawable.ic_rounded_corner_grey
-            )
+            remoteViews.setInt(R.id.image_switch, "setImageResource", R.drawable.ic_play_24dp)
+            remoteViews.setInt(R.id.layout_background, "setBackgroundResource", R.drawable.ic_rounded_corner_inactive)
         }
 
         for (appWidgetId in appWidgetIds) {
@@ -71,12 +66,17 @@ class WidgetProvider : AppWidgetProvider() {
             AppWidgetManager.getInstance(context)?.let { manager ->
                 when (intent.getIntExtra("key", 0)) {
                     AppConfig.MSG_STATE_RUNNING, AppConfig.MSG_STATE_START_SUCCESS -> {
-                        updateWidgetBackground(context, manager, manager.getAppWidgetIds(ComponentName(context, WidgetProvider::class.java)),
-                                true)
+                        updateWidgetBackground(
+                            context, manager, manager.getAppWidgetIds(ComponentName(context, WidgetProvider::class.java)),
+                            true
+                        )
                     }
+
                     AppConfig.MSG_STATE_NOT_RUNNING, AppConfig.MSG_STATE_START_FAILURE, AppConfig.MSG_STATE_STOP_SUCCESS -> {
-                        updateWidgetBackground(context, manager, manager.getAppWidgetIds(ComponentName(context, WidgetProvider::class.java)),
-                                false)
+                        updateWidgetBackground(
+                            context, manager, manager.getAppWidgetIds(ComponentName(context, WidgetProvider::class.java)),
+                            false
+                        )
                     }
                 }
             }
