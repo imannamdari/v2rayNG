@@ -1,38 +1,43 @@
 package com.v2ray.ang.ui
 
 import android.Manifest
-import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity.RESULT_OK
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.preference.PreferenceManager
-import com.tbruyelle.rxpermissions.RxPermissions
+import com.tbruyelle.rxpermissions3.RxPermissions
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.databinding.FragmentRoutingSettingsBinding
 import com.v2ray.ang.extension.toast
 import com.v2ray.ang.extension.v2RayApplication
+import com.v2ray.ang.util.MmkvManager
+import com.v2ray.ang.util.MmkvManager.settingsStorage
 import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 class RoutingSettingsFragment : Fragment() {
-    private lateinit var binding: FragmentRoutingSettingsBinding
+    private val binding by lazy { FragmentRoutingSettingsBinding.inflate(layoutInflater) }
+
     companion object {
         private const val routing_arg = "routing_arg"
     }
 
-    val defaultSharedPreferences by lazy { PreferenceManager.getDefaultSharedPreferences(requireContext()) }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         // Inflate the layout for this fragment
-        binding = FragmentRoutingSettingsBinding.inflate(layoutInflater)
         return binding.root// inflater.inflate(R.layout.fragment_routing_settings, container, false)
     }
 
@@ -47,8 +52,8 @@ class RoutingSettingsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val content = defaultSharedPreferences.getString(requireArguments().getString(routing_arg), "")
-        binding.etRoutingContent.text = Utils.getEditable(content!!)
+        val content = settingsStorage?.getString(requireArguments().getString(routing_arg), "")
+        binding.etRoutingContent.text = Utils.getEditable(content)
 
         setHasOptionsMenu(true)
     }
@@ -63,28 +68,33 @@ class RoutingSettingsFragment : Fragment() {
             saveRouting()
             true
         }
+
         R.id.del_routing -> {
             binding.etRoutingContent.text = null
             true
         }
+
         R.id.scan_replace -> {
             scanQRcode(true)
             true
         }
+
         R.id.scan_append -> {
             scanQRcode(false)
             true
         }
+
         R.id.default_rules -> {
             setDefaultRules()
             true
         }
+
         else -> super.onOptionsItemSelected(item)
     }
 
     private fun saveRouting() {
         val content = binding.etRoutingContent.text.toString()
-        defaultSharedPreferences.edit().putString(requireArguments().getString(routing_arg), content).apply()
+        settingsStorage?.encode(requireArguments().getString(routing_arg), content)
         activity?.toast(R.string.toast_success)
     }
 
@@ -95,16 +105,16 @@ class RoutingSettingsFragment : Fragment() {
 //                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP), requestCode)
 //        } catch (e: Exception) {
         RxPermissions(requireActivity())
-                .request(Manifest.permission.CAMERA)
-                .subscribe {
-                    if (it)
-                        if (forReplace)
-                            scanQRCodeForReplace.launch(Intent(activity, ScannerActivity::class.java))
-                        else
-                            scanQRCodeForAppend.launch(Intent(activity, ScannerActivity::class.java))
+            .request(Manifest.permission.CAMERA)
+            .subscribe {
+                if (it)
+                    if (forReplace)
+                        scanQRCodeForReplace.launch(Intent(activity, ScannerActivity::class.java))
                     else
-                        activity?.toast(R.string.toast_permission_denied)
-                }
+                        scanQRCodeForAppend.launch(Intent(activity, ScannerActivity::class.java))
+                else
+                    activity?.toast(R.string.toast_permission_denied)
+            }
 //        }
         return true
     }
@@ -112,7 +122,7 @@ class RoutingSettingsFragment : Fragment() {
     private val scanQRCodeForReplace = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == RESULT_OK) {
             val content = it.data?.getStringExtra("SCAN_RESULT")
-            binding.etRoutingContent.text = Utils.getEditable(content!!)
+            binding.etRoutingContent.text = Utils.getEditable(content)
         }
     }
 
@@ -128,11 +138,13 @@ class RoutingSettingsFragment : Fragment() {
         var tag = ""
         when (requireArguments().getString(routing_arg)) {
             AppConfig.PREF_V2RAY_ROUTING_AGENT -> {
-                tag = AppConfig.TAG_AGENT
+                tag = AppConfig.TAG_PROXY
             }
+
             AppConfig.PREF_V2RAY_ROUTING_DIRECT -> {
                 tag = AppConfig.TAG_DIRECT
             }
+
             AppConfig.PREF_V2RAY_ROUTING_BLOCKED -> {
                 tag = AppConfig.TAG_BLOCKED
             }
@@ -144,7 +156,7 @@ class RoutingSettingsFragment : Fragment() {
             val content = Utils.getUrlContext(url, 5000)
             launch(Dispatchers.Main) {
                 val routingList = if (TextUtils.isEmpty(content)) {
-                    Utils.readTextFromAssets(activity?.v2RayApplication!!, "custom_routing_$tag")
+                    Utils.readTextFromAssets(activity?.v2RayApplication, "custom_routing_$tag")
                 } else {
                     content
                 }

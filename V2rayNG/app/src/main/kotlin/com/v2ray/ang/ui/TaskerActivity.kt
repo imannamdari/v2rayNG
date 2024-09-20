@@ -1,50 +1,45 @@
 package com.v2ray.ang.ui
 
-import android.app.Activity
-import android.os.Bundle
-import android.view.View
-import android.widget.ArrayAdapter
-import android.widget.ListView
-import java.util.ArrayList
-import com.v2ray.ang.R
 import android.content.Intent
+import android.os.Bundle
 import android.text.TextUtils
 import android.view.Menu
 import android.view.MenuItem
-import com.tencent.mmkv.MMKV
+import android.view.View
+import android.widget.ArrayAdapter
+import android.widget.ListView
 import com.v2ray.ang.AppConfig
+import com.v2ray.ang.R
 import com.v2ray.ang.databinding.ActivityTaskerBinding
 import com.v2ray.ang.util.MmkvManager
 
 class TaskerActivity : BaseActivity() {
-    private lateinit var binding: ActivityTaskerBinding
+    private val binding by lazy { ActivityTaskerBinding.inflate(layoutInflater) }
 
     private var listview: ListView? = null
     private var lstData: ArrayList<String> = ArrayList()
     private var lstGuid: ArrayList<String> = ArrayList()
 
-    private val serverStorage by lazy { MMKV.mmkvWithID(MmkvManager.ID_SERVER_CONFIG, MMKV.MULTI_PROCESS_MODE) }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityTaskerBinding.inflate(layoutInflater)
-        val view = binding.root
-        setContentView(view)
+        setContentView(binding.root)
 
         //add def value
         lstData.add("Default")
         lstGuid.add(AppConfig.TASKER_DEFAULT_GUID)
 
-        serverStorage?.allKeys()?.forEach { key ->
+        MmkvManager.serverStorage?.allKeys()?.forEach { key ->
             MmkvManager.decodeServerConfig(key)?.let { config ->
                 lstData.add(config.remarks)
                 lstGuid.add(key)
             }
         }
-        val adapter = ArrayAdapter(this,
-                android.R.layout.simple_list_item_single_choice, lstData)
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_list_item_single_choice, lstData
+        )
         listview = findViewById<View>(R.id.listview) as ListView
-        listview!!.adapter = adapter
+        listview?.adapter = adapter
 
         init()
     }
@@ -90,7 +85,7 @@ class TaskerActivity : BaseActivity() {
 
         intent.putExtra(AppConfig.TASKER_EXTRA_BUNDLE, extraBundle)
         intent.putExtra(AppConfig.TASKER_EXTRA_STRING_BLURB, blurb)
-        setResult(Activity.RESULT_OK, intent)
+        setResult(RESULT_OK, intent)
         finish()
     }
 
@@ -105,10 +100,12 @@ class TaskerActivity : BaseActivity() {
         R.id.del_config -> {
             true
         }
+
         R.id.save_config -> {
             confirmFinish()
             true
         }
+
         else -> super.onOptionsItemSelected(item)
     }
 

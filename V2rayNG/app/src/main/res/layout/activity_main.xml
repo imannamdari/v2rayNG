@@ -13,8 +13,7 @@
 
         <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:theme="@style/AppTheme.AppBarOverlay">
+            android:layout_height="wrap_content">
 
             <androidx.appcompat.widget.Toolbar
                 android:id="@+id/toolbar"
@@ -38,6 +37,22 @@
                     android:layout_height="match_parent"
                     android:orientation="vertical">
 
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/pb_waiting"
+                        app:indicatorColor="@color/color_fab_active"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:indeterminate="true"
+                        android:visibility="invisible" />
+
+                    <com.google.android.material.tabs.TabLayout
+                        android:id="@+id/tab_group"
+                        app:tabMode="scrollable"
+                        app:tabTextAppearance="@style/TabLayoutTextStyle"
+                        app:tabIndicatorFullWidth="false"
+                        android:layout_height="wrap_content"
+                        android:layout_width="match_parent" />
+
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/recycler_view"
                         android:layout_width="match_parent"
@@ -49,8 +64,8 @@
                         android:id="@+id/layout_test"
                         android:layout_width="match_parent"
                         android:layout_height="@dimen/connection_test_height"
-                        android:background="?attr/colorPrimary"
-                        android:gravity="center|left"
+                        android:background="@color/colorPrimary"
+                        android:gravity="center|start"
                         android:nextFocusRight="@+id/fab"
                         android:clickable="true"
                         android:focusable="true"
@@ -64,14 +79,12 @@
                             android:minLines="1"
                             android:paddingStart="16dp"
                             android:text="@string/connection_test_pending"
-                            android:textAppearance="@style/TextAppearance.AppCompat.Small"
-                            android:textColor="@color/colorWhite" />
+                            android:textAppearance="@style/TextAppearance.AppCompat.Small" />
 
                     </LinearLayout>
                 </LinearLayout>
 
-
-                <com.github.jorgecastilloprz.FABProgressCircle
+                <FrameLayout
                     android:id="@+id/fabProgressCircle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -95,7 +108,7 @@
                         android:src="@drawable/ic_stat_name"
                         app:layout_anchorGravity="bottom|right|end" />
 
-                </com.github.jorgecastilloprz.FABProgressCircle>
+                </FrameLayout>
             </androidx.coordinatorlayout.widget.CoordinatorLayout>
         </RelativeLayout>
     </LinearLayout>
@@ -106,20 +119,9 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         app:headerLayout="@layout/nav_header"
-        app:menu="@menu/menu_drawer" >
+        app:itemIconTint="@color/colorAccent"
+        app:menu="@menu/menu_drawer">
 
-        <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom"
-                android:padding="2dp">
-
-            <TextView
-                    android:id="@+id/version"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center" />
-        </LinearLayout>
     </com.google.android.material.navigation.NavigationView>
 
 </androidx.drawerlayout.widget.DrawerLayout>

@@ -6,8 +6,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import com.v2ray.ang.dto.AppInfo
-import rx.Observable
-import java.util.*
+import io.reactivex.rxjava3.core.Observable
 
 object AppManagerUtil {
     fun loadNetworkAppList(ctx: Context): ArrayList<AppInfo> {
@@ -22,7 +21,7 @@ object AppManagerUtil {
 
             val appName = applicationInfo.loadLabel(packageManager).toString()
             val appIcon = applicationInfo.loadIcon(packageManager)
-            val isSystemApp = (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) > 0
+            val isSystemApp = applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM > 0
 
             val appInfo = AppInfo(appName, pkg.packageName, appIcon, isSystemApp, 0)
             apps.add(appInfo)
@@ -31,9 +30,10 @@ object AppManagerUtil {
         return apps
     }
 
-    fun rxLoadNetworkAppList(ctx: Context): Observable<ArrayList<AppInfo>> = Observable.unsafeCreate {
-        it.onNext(loadNetworkAppList(ctx))
-    }
+    fun rxLoadNetworkAppList(ctx: Context): Observable<ArrayList<AppInfo>> =
+        Observable.unsafeCreate {
+            it.onNext(loadNetworkAppList(ctx))
+        }
 
     val PackageInfo.hasInternetPermission: Boolean
         get() {

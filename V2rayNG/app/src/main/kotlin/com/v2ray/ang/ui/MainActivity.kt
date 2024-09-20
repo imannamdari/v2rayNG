@@ -1,58 +1,79 @@
 package com.v2ray.ang.ui
 
 import android.Manifest
-import android.content.*
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.content.res.ColorStateList
 import android.net.Uri
 import android.net.VpnService
-import androidx.recyclerview.widget.LinearLayoutManager
-import android.view.Menu
-import android.view.MenuItem
-import com.tbruyelle.rxpermissions.RxPermissions
-import com.v2ray.ang.R
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.KeyEvent
-import com.v2ray.ang.AppConfig
-import android.content.res.ColorStateList
-import android.os.Build
-import com.google.android.material.navigation.NavigationView
-import androidx.core.content.ContextCompat
-import androidx.core.view.GravityCompat
-import androidx.appcompat.app.ActionBarDrawerToggle
-import androidx.recyclerview.widget.ItemTouchHelper
-import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.SearchView
+import androidx.core.content.ContextCompat
+import androidx.core.view.GravityCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
-import com.tencent.mmkv.MMKV
-import com.v2ray.ang.AppConfig.ANG_PACKAGE
-import com.v2ray.ang.BuildConfig
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.navigation.NavigationView
+import com.google.android.material.tabs.TabLayout
+import com.tbruyelle.rxpermissions3.RxPermissions
+import com.v2ray.ang.AppConfig
+import com.v2ray.ang.R
 import com.v2ray.ang.databinding.ActivityMainBinding
 import com.v2ray.ang.dto.EConfigType
 import com.v2ray.ang.extension.toast
-import rx.Observable
-import rx.android.schedulers.AndroidSchedulers
-import java.util.concurrent.TimeUnit
 import com.v2ray.ang.helper.SimpleItemTouchHelperCallback
 import com.v2ray.ang.service.V2RayServiceManager
-import com.v2ray.ang.util.*
+import com.v2ray.ang.util.AngConfigManager
+import com.v2ray.ang.util.MmkvManager
+import com.v2ray.ang.util.MmkvManager.settingsStorage
+import com.v2ray.ang.util.Utils
 import com.v2ray.ang.viewmodel.MainViewModel
-import kotlinx.coroutines.*
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
+import io.reactivex.rxjava3.core.Observable
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import me.drakeet.support.toast.ToastCompat
-import java.io.File
-import java.io.FileOutputStream
+import java.util.concurrent.TimeUnit
 
 class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedListener {
-    private lateinit var binding: ActivityMainBinding
+    private val binding by lazy {
+        ActivityMainBinding.inflate(layoutInflater)
+    }
 
     private val adapter by lazy { MainRecyclerAdapter(this) }
-    private val mainStorage by lazy { MMKV.mmkvWithID(MmkvManager.ID_MAIN, MMKV.MULTI_PROCESS_MODE) }
-    private val settingsStorage by lazy { MMKV.mmkvWithID(MmkvManager.ID_SETTING, MMKV.MULTI_PROCESS_MODE) }
     private val requestVpnPermission = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == RESULT_OK) {
             startV2Ray()
+        }
+    }
+    private val requestSubSettingActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        initGroupTab()
+    }
+    private val tabGroupListener = object : TabLayout.OnTabSelectedListener {
+        override fun onTabSelected(tab: TabLayout.Tab?) {
+            val selectId = tab?.tag.toString()
+            if (selectId != mainViewModel.subscriptionId) {
+                mainViewModel.subscriptionIdChanged(selectId)
+            }
+        }
+
+        override fun onTabUnselected(tab: TabLayout.Tab?) {
+        }
+
+        override fun onTabReselected(tab: TabLayout.Tab?) {
         }
     }
     private var mItemTouchHelper: ItemTouchHelper? = null
@@ -60,16 +81,14 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        val view = binding.root
-        setContentView(view)
+        setContentView(binding.root)
         title = getString(R.string.title_server)
         setSupportActionBar(binding.toolbar)
 
         binding.fab.setOnClickListener {
             if (mainViewModel.isRunning.value == true) {
                 Utils.stopVService(this)
-            } else if (settingsStorage?.decodeString(AppConfig.PREF_MODE) ?: "VPN" == "VPN") {
+            } else if ((settingsStorage?.decodeString(AppConfig.PREF_MODE) ?: "VPN") == "VPN") {
                 val intent = VpnService.prepare(this)
                 if (intent == null) {
                     startV2Ray()
@@ -99,15 +118,14 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
 
         val toggle = ActionBarDrawerToggle(
-                this, binding.drawerLayout, binding.toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close)
+            this, binding.drawerLayout, binding.toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close
+        )
         binding.drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
         binding.navView.setNavigationItemSelectedListener(this)
-        binding.version.text = "v${BuildConfig.VERSION_NAME} (${SpeedtestUtil.getLibVersion()})"
 
+        initGroupTab()
         setupViewModel()
-        copyAssets()
-        migrateLegacy()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             RxPermissions(this)
@@ -117,6 +135,17 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
                         toast(R.string.toast_permission_denied)
                 }
         }
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    binding.drawerLayout.closeDrawer(GravityCompat.START)
+                } else {
+                    //super.onBackPressed()
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
     }
 
     private fun setupViewModel() {
@@ -131,66 +160,49 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         mainViewModel.isRunning.observe(this) { isRunning ->
             adapter.isRunning = isRunning
             if (isRunning) {
-                binding.fab.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.colorSelected))
+                binding.fab.setImageResource(R.drawable.ic_stop_24dp)
+                binding.fab.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.color_fab_active))
                 setTestState(getString(R.string.connection_connected))
                 binding.layoutTest.isFocusable = true
             } else {
-                binding.fab.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.colorUnselected))
+                binding.fab.setImageResource(R.drawable.ic_play_24dp)
+                binding.fab.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.color_fab_inactive))
                 setTestState(getString(R.string.connection_not_connected))
                 binding.layoutTest.isFocusable = false
             }
-            hideCircle()
         }
         mainViewModel.startListenBroadcast()
+        mainViewModel.copyAssets(assets)
     }
 
-    private fun copyAssets() {
-        val extFolder = Utils.userAssetPath(this)
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val geo = arrayOf("geosite.dat", "geoip.dat")
-                assets.list("")
-                        ?.filter { geo.contains(it) }
-                        ?.filter { !File(extFolder, it).exists() }
-                        ?.forEach {
-                            val target = File(extFolder, it)
-                            assets.open(it).use { input ->
-                                FileOutputStream(target).use { output ->
-                                    input.copyTo(output)
-                                }
-                            }
-                            Log.i(ANG_PACKAGE, "Copied from apk assets folder to ${target.absolutePath}")
-                        }
-            } catch (e: Exception) {
-                Log.e(ANG_PACKAGE, "asset copy failed", e)
-            }
-        }
-    }
+    private fun initGroupTab() {
+        binding.tabGroup.removeOnTabSelectedListener(tabGroupListener)
+        binding.tabGroup.removeAllTabs()
+        binding.tabGroup.isVisible = false
 
-    private fun migrateLegacy() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val result = AngConfigManager.migrateLegacyConfig(this@MainActivity)
-            if (result != null) {
-                launch(Dispatchers.Main) {
-                    if (result) {
-                        toast(getString(R.string.migration_success))
-                        mainViewModel.reloadServerList()
-                    } else {
-                        toast(getString(R.string.migration_fail))
-                    }
-                }
-            }
+        val (listId, listRemarks) = mainViewModel.getSubscriptions(this)
+        if (listId == null || listRemarks == null) {
+            return
         }
+
+        for (it in listRemarks.indices) {
+            val tab = binding.tabGroup.newTab()
+            tab.text = listRemarks[it]
+            tab.tag = listId[it]
+            binding.tabGroup.addTab(tab)
+        }
+        val selectIndex =
+            listId.indexOf(mainViewModel.subscriptionId).takeIf { it >= 0 } ?: (listId.count() - 1)
+        binding.tabGroup.selectTab(binding.tabGroup.getTabAt(selectIndex))
+        binding.tabGroup.addOnTabSelectedListener(tabGroupListener)
+        binding.tabGroup.isVisible = true
     }
 
     fun startV2Ray() {
-        if (mainStorage?.decodeString(MmkvManager.KEY_SELECTED_SERVER).isNullOrEmpty()) {
+        if (MmkvManager.getSelectServer().isNullOrEmpty()) {
             return
         }
-        showCircle()
-//        toast(R.string.toast_services_start)
         V2RayServiceManager.startV2Ray(this)
-        hideCircle()
     }
 
     fun restartV2Ray() {
@@ -198,10 +210,10 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             Utils.stopVService(this)
         }
         Observable.timer(500, TimeUnit.MILLISECONDS)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    startV2Ray()
-                }
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe {
+                startV2Ray()
+            }
     }
 
     public override fun onResume() {
@@ -215,7 +227,25 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
-        return true
+
+        val searchItem = menu.findItem(R.id.search_view)
+        if (searchItem != null) {
+            val searchView = searchItem.actionView as SearchView
+            searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+                override fun onQueryTextSubmit(query: String?): Boolean = false
+
+                override fun onQueryTextChange(newText: String?): Boolean {
+                    mainViewModel.filterConfig(newText.orEmpty())
+                    return false
+                }
+            })
+
+            searchView.setOnCloseListener {
+                mainViewModel.filterConfig("")
+                false
+            }
+        }
+        return super.onCreateOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
@@ -223,51 +253,61 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             importQRcode(true)
             true
         }
+
         R.id.import_clipboard -> {
             importClipboard()
             true
         }
+
         R.id.import_manually_vmess -> {
             importManually(EConfigType.VMESS.value)
             true
         }
+
         R.id.import_manually_vless -> {
             importManually(EConfigType.VLESS.value)
             true
         }
+
         R.id.import_manually_ss -> {
             importManually(EConfigType.SHADOWSOCKS.value)
             true
         }
+
         R.id.import_manually_socks -> {
             importManually(EConfigType.SOCKS.value)
             true
         }
+
         R.id.import_manually_trojan -> {
             importManually(EConfigType.TROJAN.value)
             true
         }
+
+        R.id.import_manually_wireguard -> {
+            importManually(EConfigType.WIREGUARD.value)
+            true
+        }
+
         R.id.import_config_custom_clipboard -> {
             importConfigCustomClipboard()
             true
         }
+
         R.id.import_config_custom_local -> {
             importConfigCustomLocal()
             true
         }
+
         R.id.import_config_custom_url -> {
             importConfigCustomUrlClipboard()
             true
         }
+
         R.id.import_config_custom_url_scan -> {
             importQRcode(false)
             true
         }
-
-//        R.id.sub_setting -> {
-//            startActivity<SubSettingActivity>()
-//            true
-//        }
 
         R.id.sub_update -> {
             importConfigViaSub()
@@ -275,11 +315,18 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         }
 
         R.id.export_all -> {
-            if (AngConfigManager.shareNonCustomConfigsToClipboard(this, mainViewModel.serverList) == 0) {
-                toast(R.string.toast_success)
-            } else {
-                toast(R.string.toast_failure)
+            binding.pbWaiting.show()
+            lifecycleScope.launch(Dispatchers.IO) {
+                val ret = mainViewModel.exportAllServer()
+                launch(Dispatchers.Main) {
+                    if (ret == 0)
+                        toast(R.string.toast_success)
+                    else
+                        toast(R.string.toast_failure)
+                    binding.pbWaiting.hide()
+                }
             }
+
             true
         }
 
@@ -300,44 +347,78 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 
         R.id.del_all_config -> {
             AlertDialog.Builder(this).setMessage(R.string.del_config_comfirm)
-                    .setPositiveButton(android.R.string.ok) { _, _ ->
-                        MmkvManager.removeAllServer()
-                        mainViewModel.reloadServerList()
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    binding.pbWaiting.show()
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        mainViewModel.removeAllServer()
+                        launch(Dispatchers.Main) {
+                            mainViewModel.reloadServerList()
+                            binding.pbWaiting.hide()
+                        }
                     }
-                    .show()
-            true
-        }
-        R.id.del_duplicate_config-> {
-            AlertDialog.Builder(this).setMessage(R.string.del_config_comfirm)
-                .setPositiveButton(android.R.string.ok) { _, _ ->
-                    mainViewModel.removeDuplicateServer()
+                }
+                .setNegativeButton(android.R.string.no) { _, _ ->
+                    //do noting
                 }
                 .show()
             true
         }
+
+        R.id.del_duplicate_config -> {
+            AlertDialog.Builder(this).setMessage(R.string.del_config_comfirm)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    binding.pbWaiting.show()
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val ret = mainViewModel.removeDuplicateServer()
+                        launch(Dispatchers.Main) {
+                            mainViewModel.reloadServerList()
+                            toast(getString(R.string.title_del_duplicate_config_count, ret))
+                            binding.pbWaiting.hide()
+                        }
+                    }
+                }
+                .setNegativeButton(android.R.string.no) { _, _ ->
+                    //do noting
+                }
+                .show()
+            true
+        }
+
         R.id.del_invalid_config -> {
-            AlertDialog.Builder(this).setMessage(R.string.del_config_comfirm)
+            AlertDialog.Builder(this).setMessage(R.string.del_invalid_config_comfirm)
                 .setPositiveButton(android.R.string.ok) { _, _ ->
-                    MmkvManager.removeInvalidServer()
-                    mainViewModel.reloadServerList()
+                    binding.pbWaiting.show()
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        mainViewModel.removeInvalidServer()
+                        launch(Dispatchers.Main) {
+                            mainViewModel.reloadServerList()
+                            binding.pbWaiting.hide()
+                        }
+                    }
+                }
+                .setNegativeButton(android.R.string.no) { _, _ ->
+                    //do noting
                 }
                 .show()
             true
         }
+
         R.id.sort_by_test_results -> {
-            MmkvManager.sortByTestResults()
-            mainViewModel.reloadServerList()
-            true
-        }
-        R.id.filter_config -> {
-            mainViewModel.filterConfig(this)
+            binding.pbWaiting.show()
+            lifecycleScope.launch(Dispatchers.IO) {
+                mainViewModel.sortByTestResults()
+                launch(Dispatchers.Main) {
+                    mainViewModel.reloadServerList()
+                    binding.pbWaiting.hide()
+                }
+            }
             true
         }
 
         else -> super.onOptionsItemSelected(item)
     }
 
-    private fun importManually(createConfigType : Int) {
+    private fun importManually(createConfigType: Int) {
         startActivity(
             Intent()
                 .putExtra("createConfigType", createConfigType)
@@ -349,23 +430,23 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     /**
      * import config from qrcode
      */
-    fun importQRcode(forConfig: Boolean): Boolean {
+    private fun importQRcode(forConfig: Boolean): Boolean {
 //        try {
 //            startActivityForResult(Intent("com.google.zxing.client.android.SCAN")
 //                    .addCategory(Intent.CATEGORY_DEFAULT)
 //                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP), requestCode)
 //        } catch (e: Exception) {
         RxPermissions(this)
-                .request(Manifest.permission.CAMERA)
-                .subscribe {
-                    if (it)
-                        if (forConfig)
-                            scanQRCodeForConfig.launch(Intent(this, ScannerActivity::class.java))
-                        else
-                            scanQRCodeForUrlToCustomConfig.launch(Intent(this, ScannerActivity::class.java))
+            .request(Manifest.permission.CAMERA)
+            .subscribe {
+                if (it)
+                    if (forConfig)
+                        scanQRCodeForConfig.launch(Intent(this, ScannerActivity::class.java))
                     else
-                        toast(R.string.toast_permission_denied)
-                }
+                        scanQRCodeForUrlToCustomConfig.launch(Intent(this, ScannerActivity::class.java))
+                else
+                    toast(R.string.toast_permission_denied)
+            }
 //        }
         return true
     }
@@ -385,7 +466,7 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     /**
      * import config from clipboard
      */
-    fun importClipboard()
+    private fun importClipboard()
             : Boolean {
         try {
             val clipboard = Utils.getClipboard(this)
@@ -397,27 +478,32 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         return true
     }
 
-    fun importBatchConfig(server: String?, subid: String = "") {
-        val subid2 = if(subid.isNullOrEmpty()){
-            mainViewModel.subscriptionId
-        }else{
-            subid
-        }
-        val append = subid.isNullOrEmpty()
+    private fun importBatchConfig(server: String?) {
+//        val dialog = AlertDialog.Builder(this)
+//            .setView(LayoutProgressBinding.inflate(layoutInflater).root)
+//            .setCancelable(false)
+//            .show()
+        binding.pbWaiting.show()
 
-        var count = AngConfigManager.importBatchConfig(server, subid2, append)
-        if (count <= 0) {
-            count = AngConfigManager.importBatchConfig(Utils.decode(server!!), subid2, append)
-        }
-        if (count > 0) {
-            toast(R.string.toast_success)
-            mainViewModel.reloadServerList()
-        } else {
-            toast(R.string.toast_failure)
+        lifecycleScope.launch(Dispatchers.IO) {
+            val (count, countSub) = AngConfigManager.importBatchConfig(server, mainViewModel.subscriptionId, true)
+            delay(500L)
+            launch(Dispatchers.Main) {
+                if (count > 0) {
+                    toast(R.string.toast_success)
+                    mainViewModel.reloadServerList()
+                } else if (countSub > 0) {
+                    initGroupTab()
+                } else {
+                    toast(R.string.toast_failure)
+                }
+                //dialog.dismiss()
+                binding.pbWaiting.hide()
+            }
         }
     }
 
-    fun importConfigCustomClipboard()
+    private fun importConfigCustomClipboard()
             : Boolean {
         try {
             val configText = Utils.getClipboard(this)
@@ -436,7 +522,7 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     /**
      * import config from local config file
      */
-    fun importConfigCustomLocal(): Boolean {
+    private fun importConfigCustomLocal(): Boolean {
         try {
             showFileChooser()
         } catch (e: Exception) {
@@ -446,7 +532,7 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         return true
     }
 
-    fun importConfigCustomUrlClipboard()
+    private fun importConfigCustomUrlClipboard()
             : Boolean {
         try {
             val url = Utils.getClipboard(this)
@@ -464,7 +550,7 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     /**
      * import config from url
      */
-    fun importConfigCustomUrl(url: String?): Boolean {
+    private fun importConfigCustomUrl(url: String?): Boolean {
         try {
             if (!Utils.isValidUrl(url)) {
                 toast(R.string.toast_invalid_url)
@@ -491,43 +577,26 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
     /**
      * import config from sub
      */
-    fun importConfigViaSub()
-            : Boolean {
-        try {
-            toast(R.string.title_sub_update)
-            MmkvManager.decodeSubscriptions().forEach {
-                if (TextUtils.isEmpty(it.first)
-                        || TextUtils.isEmpty(it.second.remarks)
-                        || TextUtils.isEmpty(it.second.url)
-                ) {
-                    return@forEach
+    private fun importConfigViaSub(): Boolean {
+//        val dialog = AlertDialog.Builder(this)
+//            .setView(LayoutProgressBinding.inflate(layoutInflater).root)
+//            .setCancelable(false)
+//            .show()
+        binding.pbWaiting.show()
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val count = mainViewModel.updateConfigViaSubAll()
+            delay(500L)
+            launch(Dispatchers.Main) {
+                if (count > 0) {
+                    toast(R.string.toast_success)
+                    mainViewModel.reloadServerList()
+                } else {
+                    toast(R.string.toast_failure)
                 }
-                if (!it.second.enabled) {
-                    return@forEach
-                }
-                val url = Utils.idnToASCII(it.second.url)
-                if (!Utils.isValidUrl(url)) {
-                    return@forEach
-                }
-                Log.d(ANG_PACKAGE, url)
-                lifecycleScope.launch(Dispatchers.IO) {
-                    val configText = try {
-                        Utils.getUrlContentWithCustomUserAgent(url)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        launch(Dispatchers.Main) {
-                            toast("\"" + it.second.remarks + "\" " + getString(R.string.toast_failure))
-                        }
-                        return@launch
-                    }
-                    launch(Dispatchers.Main) {
-                        importBatchConfig(configText, it.first)
-                    }
-                }
+                //dialog.dismiss()
+                binding.pbWaiting.hide()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return false
         }
         return true
     }
@@ -558,34 +627,42 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
      * read content from uri
      */
     private fun readContentFromUri(uri: Uri) {
+        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Manifest.permission.READ_MEDIA_IMAGES
+        } else {
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        }
         RxPermissions(this)
-                .request(Manifest.permission.READ_EXTERNAL_STORAGE)
-                .subscribe {
-                    if (it) {
-                        try {
-                            contentResolver.openInputStream(uri).use { input ->
-                                importCustomizeConfig(input?.bufferedReader()?.readText())
-                            }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
+            .request(permission)
+            .subscribe {
+                if (it) {
+                    try {
+                        contentResolver.openInputStream(uri).use { input ->
+                            importCustomizeConfig(input?.bufferedReader()?.readText())
                         }
-                    } else
-                        toast(R.string.toast_permission_denied)
-                }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                } else
+                    toast(R.string.toast_permission_denied)
+            }
     }
 
     /**
      * import customize config
      */
-    fun importCustomizeConfig(server: String?) {
+    private fun importCustomizeConfig(server: String?) {
         try {
             if (server == null || TextUtils.isEmpty(server)) {
                 toast(R.string.toast_none_data)
                 return
             }
-            mainViewModel.appendCustomConfigServer(server)
-            mainViewModel.reloadServerList()
-            toast(R.string.toast_success)
+            if (mainViewModel.appendCustomConfigServer(server)) {
+                mainViewModel.reloadServerList()
+                toast(R.string.toast_success)
+            } else {
+                toast(R.string.toast_failure)
+            }
             //adapter.notifyItemInserted(mainViewModel.serverList.lastIndex)
         } catch (e: Exception) {
             ToastCompat.makeText(this, "${getString(R.string.toast_malformed_josn)} ${e.cause?.message}", Toast.LENGTH_LONG).show()
@@ -594,7 +671,7 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         }
     }
 
-    fun setTestState(content: String?) {
+    private fun setTestState(content: String?) {
         binding.tvTestState.text = content
     }
 
@@ -608,67 +685,42 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 //    }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
+        if (keyCode == KeyEvent.KEYCODE_BACK || keyCode == KeyEvent.KEYCODE_BUTTON_B) {
             moveTaskToBack(false)
             return true
         }
         return super.onKeyDown(keyCode, event)
     }
 
-    fun showCircle() {
-        binding.fabProgressCircle.show()
-    }
-
-    fun hideCircle() {
-        try {
-            Observable.timer(300, TimeUnit.MILLISECONDS)
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe {
-                        try {
-                            if (binding.fabProgressCircle.isShown) {
-                                binding.fabProgressCircle.hide()
-                            }
-                        } catch (e: Exception) {
-                            Log.w(ANG_PACKAGE, e)
-                        }
-                    }
-        } catch (e: Exception) {
-            Log.d(ANG_PACKAGE, e.toString())
-        }
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            binding.drawerLayout.closeDrawer(GravityCompat.START)
-        } else {
-            //super.onBackPressed()
-            onBackPressedDispatcher.onBackPressed()
-        }
-    }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         // Handle navigation view item clicks here.
         when (item.itemId) {
-            //R.id.server_profile -> activityClass = MainActivity::class.java
             R.id.sub_setting -> {
-                startActivity(Intent(this, SubSettingActivity::class.java))
+                requestSubSettingActivity.launch(Intent(this, SubSettingActivity::class.java))
             }
+
             R.id.settings -> {
-                startActivity(Intent(this, SettingsActivity::class.java)
-                        .putExtra("isRunning", mainViewModel.isRunning.value == true))
+                startActivity(
+                    Intent(this, SettingsActivity::class.java)
+                        .putExtra("isRunning", mainViewModel.isRunning.value == true)
+                )
             }
+
             R.id.user_asset_setting -> {
                 startActivity(Intent(this, UserAssetActivity::class.java))
             }
-            R.id.feedback -> {
-                Utils.openUri(this, AppConfig.v2rayNGIssues)
-            }
+
             R.id.promotion -> {
-                Utils.openUri(this, "${Utils.decode(AppConfig.promotionUrl)}?t=${System.currentTimeMillis()}")
+                Utils.openUri(this, "${Utils.decode(AppConfig.PromotionUrl)}?t=${System.currentTimeMillis()}")
             }
+
             R.id.logcat -> {
                 startActivity(Intent(this, LogcatActivity::class.java))
+            }
+
+            R.id.about -> {
+                startActivity(Intent(this, AboutActivity::class.java))
             }
         }
         binding.drawerLayout.closeDrawer(GravityCompat.START)
