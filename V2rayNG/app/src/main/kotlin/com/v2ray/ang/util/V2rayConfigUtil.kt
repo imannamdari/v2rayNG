@@ -68,6 +68,7 @@ object V2rayConfigUtil {
         val v2rayConfig = Gson().fromJson(assets, V2rayConfig::class.java) ?: return result
         v2rayConfig.log.loglevel = settingsStorage?.decodeString(AppConfig.PREF_LOGLEVEL) ?: "warning"
         v2rayConfig.remarks = config.remarks
+        v2rayConfig.ssh = config.ssh
 
         inbounds(v2rayConfig)
 
@@ -80,6 +81,29 @@ object V2rayConfigUtil {
         fakedns(v2rayConfig)
 
         dns(v2rayConfig)
+
+        // ssh handshake
+        if (v2rayConfig.ssh?.enabled == true) {
+            val port: Int = v2rayConfig.ssh?.runningPort ?: 0
+            val ip: String = v2rayConfig.ssh?.ip ?: "0.0.0.0"
+            val sshHandshakeNode = V2rayConfig.OutboundBean(
+                tag = "ssh-handshake",
+                protocol = "socks",
+                settings = V2rayConfig.OutboundBean.OutSettingsBean(
+                    servers = listOf(
+                        V2rayConfig.OutboundBean.OutSettingsBean.ServersBean(
+                            address = "127.0.0.1",
+                            port = port
+                        )
+                    )
+                )
+            )
+            v2rayConfig.outbounds.add(sshHandshakeNode)
+            v2rayConfig.outbounds[0].streamSettings?.sockopt = V2rayConfig.OutboundBean.StreamSettingsBean.SockoptBean(
+                dialerProxy = "ssh-handshake",
+                domainStrategy = "UseIP"
+            )
+        }
 
         if (settingsStorage?.decodeBool(AppConfig.PREF_LOCAL_DNS_ENABLED) == true) {
             customLocalDns(v2rayConfig)

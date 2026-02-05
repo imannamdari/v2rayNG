@@ -17,6 +17,11 @@ data class VmessQRCode(
     var serverIP: String = "",
     var enableECH: String = "",
     var echDNS: String = "",
+    var sshEnable: String = "",
+    var sshIP: String = "",
+    var sshUser: String = "",
+    var sshPassword: String = "",
+    var sshRunningPort: String = "0",
     var alpn: String = "",
     var fp: String = ""
 )

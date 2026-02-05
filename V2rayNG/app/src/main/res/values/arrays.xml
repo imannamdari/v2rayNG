@@ -11,6 +11,10 @@
         <item>true</item>
         <item>false</item>
     </string-array>
+    <string-array name="ssh_enable" translatable="false">
+        <item>true</item>
+        <item>false</item>
+    </string-array>
     <string-array name="ss_securitys" translatable="false">
         <item>aes-256-gcm</item>
         <item>aes-128-gcm</item>

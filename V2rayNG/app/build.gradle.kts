@@ -8,7 +8,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.v2ray.ang"
+        applicationId = "com.v2ray.ang.iman"
         minSdk = 21
         targetSdk = 34
         versionCode = 592
@@ -26,7 +26,6 @@ android {
                 isUniversalApk = true
             }
         }
-
     }
 
     compileOptions {
@@ -36,7 +35,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-
+            isShrinkResources = false
         }
         debug {
             isMinifyEnabled = false
@@ -67,7 +66,7 @@ android {
                 else
                     "universal"
 
-                output.outputFileName = "v2rayNG_${variant.versionName}_${abi}.apk"
+                output.outputFileName = "v2rayNG-iman_${variant.versionName}_${abi}.apk"
                 if (versionCodes.containsKey(abi)) {
                     output.versionCodeOverride = (1000000 * versionCodes[abi]!!).plus(variant.versionCode)
                 } else {

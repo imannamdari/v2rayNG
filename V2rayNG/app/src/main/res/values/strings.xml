@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">v2rayNG</string>
+    <string name="app_name" translatable="false">v2rayNG-iman</string>
     <string name="app_widget_name">Switch</string>
     <string name="app_tile_name">Switch</string>
     <string name="app_tile_first_use">First use of this feature, please use the app to add server</string>
@@ -109,6 +109,11 @@
     <string name="msg_file_not_found">File not found</string>
     <string name="msg_remark_is_duplicate">The remarks already exists</string>
     <string name="toast_action_not_allowed">Action not allowed</string>
+    <string name="server_lab_ssh_enable">ssh enable</string>
+    <string name="server_lab_ssh_ip">ssh ip</string>
+    <string name="server_lab_ssh_user">ssh user</string>
+    <string name="server_lab_ssh_password">ssh password</string>
+    <string name="server_lab_ssh_running_port">ssh running port</string>
 
 
     <!-- PerAppProxyActivity -->
