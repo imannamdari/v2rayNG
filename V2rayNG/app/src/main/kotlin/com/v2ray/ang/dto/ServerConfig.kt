@@ -11,7 +11,8 @@ data class ServerConfig(
     val addedTime: Long = System.currentTimeMillis(),
     var remarks: String = "",
     val outboundBean: V2rayConfig.OutboundBean? = null,
-    var fullConfig: V2rayConfig? = null
+    var fullConfig: V2rayConfig? = null,
+    var ssh: V2rayConfig.SshBean? = null
 ) {
     companion object {
         fun create(configType: EConfigType): ServerConfig {
@@ -29,7 +30,8 @@ data class ServerConfig(
                                 )
                             ),
                             streamSettings = V2rayConfig.OutboundBean.StreamSettingsBean()
-                        )
+                        ),
+                        ssh = V2rayConfig.SshBean()
                     )
 
                 EConfigType.CUSTOM ->

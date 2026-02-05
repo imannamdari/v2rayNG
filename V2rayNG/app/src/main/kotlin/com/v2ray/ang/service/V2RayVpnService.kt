@@ -27,6 +27,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import java.lang.ref.SoftReference
+import android.net.IpPrefix
+import java.net.InetAddress
 
 class V2RayVpnService : VpnService(), ServiceControl {
     companion object {
@@ -105,6 +107,7 @@ class V2RayVpnService : VpnService(), ServiceControl {
     }
 
     private fun setup() {
+        Log.d("salam", V2RayServiceManager.currentConfig?.ssh?.ip.toString())
         val prepare = prepare(this)
         if (prepare != null) {
             return
@@ -115,19 +118,32 @@ class V2RayVpnService : VpnService(), ServiceControl {
         val builder = Builder()
         //val enableLocalDns = defaultDPreference.getPrefBoolean(AppConfig.PREF_LOCAL_DNS_ENABLED, false)
 
+        var routesAlreadyHandled: Boolean = false
+        // ssh bypassing
+        if (V2RayServiceManager.currentConfig?.ssh?.enabled == true) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                builder.excludeRoute(IpPrefix(InetAddress.getByName(V2RayServiceManager.currentConfig?.ssh?.ip), 32))
+            } else {
+                routesAlreadyHandled = true
+                addRoutesExcludingIp(builder, V2RayServiceManager.currentConfig?.ssh?.ip ?: "")
+            }
+        }
+
         val routingMode = settingsStorage?.decodeString(AppConfig.PREF_ROUTING_MODE)
             ?: ERoutingMode.BYPASS_LAN_MAINLAND.value
 
         builder.setMtu(VPN_MTU)
         builder.addAddress(PRIVATE_VLAN4_CLIENT, 30)
         //builder.addDnsServer(PRIVATE_VLAN4_ROUTER)
-        if (routingMode == ERoutingMode.BYPASS_LAN.value || routingMode == ERoutingMode.BYPASS_LAN_MAINLAND.value) {
-            resources.getStringArray(R.array.bypass_private_ip_address).forEach {
-                val addr = it.split('/')
-                builder.addRoute(addr[0], addr[1].toInt())
+        if (!routesAlreadyHandled) {
+            if (routingMode == ERoutingMode.BYPASS_LAN.value || routingMode == ERoutingMode.BYPASS_LAN_MAINLAND.value) {
+                resources.getStringArray(R.array.bypass_private_ip_address).forEach {
+                    val addr = it.split('/')
+                    builder.addRoute(addr[0], addr[1].toInt())
+                }
+            } else {
+                builder.addRoute("0.0.0.0", 0)
             }
-        } else {
-            builder.addRoute("0.0.0.0", 0)
         }
 
         if (settingsStorage?.decodeBool(AppConfig.PREF_PREFER_IPV6) == true) {
@@ -195,6 +211,33 @@ class V2RayVpnService : VpnService(), ServiceControl {
             // non-nullable lateinit var
             e.printStackTrace()
             stopV2Ray()
+        }
+    }
+
+    private fun addRoutesExcludingIp(builder: VpnService.Builder, ipToExclude: String) {
+        try {
+            val address = InetAddress.getByName(ipToExclude)
+            val ipBytes = address.address
+            var currentIp = 0L
+            for (byte in ipBytes) {
+                currentIp = (currentIp shl 8) or (byte.toLong() and 0xFF)
+            }
+
+            for (i in 0 until 32) {
+                val mask = 1L shl (31 - i)
+                val prefixLen = i + 1
+                val routeIpLong = (currentIp xor mask) and ((-1L shl (31 - i)))
+
+                val routeIpString = String.format("%d.%d.%d.%d",
+                    (routeIpLong shr 24) and 0xFF,
+                    (routeIpLong shr 16) and 0xFF,
+                    (routeIpLong shr 8) and 0xFF,
+                    routeIpLong and 0xFF
+                )
+                builder.addRoute(routeIpString, prefixLen)
+            }
+        } catch (e: Exception) {
+            builder.addRoute("0.0.0.0", 0)
         }
     }
 

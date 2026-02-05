@@ -2,6 +2,7 @@ package com.v2ray.ang.ui
 
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -127,6 +128,17 @@ class ServerActivity : BaseActivity() {
     private val container_ech_dns: LinearLayout? by lazy { findViewById(R.id.l7) }
     private val et_server_ip: EditText? by lazy { findViewById(R.id.et_server_ip) }
     private val container_server_ip: LinearLayout? by lazy { findViewById(R.id.l8) }
+    private val sp_ssh_enable: Spinner? by lazy { findViewById(R.id.sp_ssh_enable) }
+    private val et_ssh_ip: EditText? by lazy { findViewById(R.id.et_ssh_ip) }
+    private val et_ssh_user: EditText? by lazy { findViewById(R.id.et_ssh_user) }
+    private val et_ssh_password: EditText? by lazy { findViewById(R.id.et_ssh_password) }
+    private val et_ssh_running_port: EditText? by lazy { findViewById(R.id.et_ssh_running_port) }
+    private val container_ssh_ip: LinearLayout? by lazy { findViewById(R.id.con_ssh_ip) }
+    private val container_ssh_user: LinearLayout? by lazy { findViewById(R.id.con_ssh_user) }
+    private val container_ssh_password: LinearLayout? by lazy { findViewById(R.id.con_ssh_password) }
+    private val container_ssh_running_port: LinearLayout? by lazy { findViewById(R.id.con_ssh_running_port) }
+
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -200,6 +212,31 @@ class ServerActivity : BaseActivity() {
                 // do nothing
             }
         }
+
+        sp_ssh_enable?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                if (id == 1L) {
+                    container_ssh_ip?.visibility = View.GONE
+                    container_ssh_user?.visibility = View.GONE
+                    container_ssh_password?.visibility = View.GONE
+                    container_ssh_running_port?.visibility = View.GONE
+                } else {
+                    container_ssh_ip?.visibility = View.VISIBLE
+                    container_ssh_user?.visibility = View.VISIBLE
+                    container_ssh_password?.visibility = View.VISIBLE
+                    container_ssh_running_port?.visibility = View.VISIBLE
+                }
+            }
+            override fun onNothingSelected(p0: AdapterView<*>?) {
+                // do nothing
+            }
+        }
+
         sp_stream_security?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
                 parent: AdapterView<*>?,
@@ -266,6 +303,25 @@ class ServerActivity : BaseActivity() {
         et_id.text = Utils.getEditable(outbound.getPassword().orEmpty())
         et_alterId?.text =
             Utils.getEditable(outbound.settings?.vnext?.get(0)?.users?.get(0)?.alterId.toString())
+
+        if (config.ssh?.enabled == true) {
+            sp_ssh_enable?.setSelection(0)
+            val ssh = config.ssh
+            et_ssh_ip?.text = Utils.getEditable(ssh?.ip)
+            et_ssh_user?.text = Utils.getEditable(ssh?.user)
+            et_ssh_password?.text = Utils.getEditable(ssh?.password)
+            et_ssh_running_port?.text = Utils.getEditable(ssh?.runningPort.toString())
+            container_ssh_ip?.visibility = View.VISIBLE
+            container_ssh_user?.visibility = View.VISIBLE
+            container_ssh_password?.visibility = View.VISIBLE
+            container_ssh_running_port?.visibility = View.VISIBLE
+        } else {
+            sp_ssh_enable?.setSelection(1)
+            container_ssh_ip?.visibility = View.GONE
+            container_ssh_user?.visibility = View.GONE
+            container_ssh_password?.visibility = View.GONE
+            container_ssh_running_port?.visibility = View.GONE
+        }
         if (config.configType == EConfigType.SOCKS) {
             et_security?.text =
                 Utils.getEditable(outbound.settings?.servers?.get(0)?.users?.get(0)?.user.orEmpty())
@@ -413,6 +469,12 @@ class ServerActivity : BaseActivity() {
         et_local_address?.text =
             Utils.getEditable("${WIREGUARD_LOCAL_ADDRESS_V4},${WIREGUARD_LOCAL_ADDRESS_V6}")
         et_local_mtu?.text = Utils.getEditable(WIREGUARD_LOCAL_MTU)
+
+        sp_ssh_enable?.setSelection(1)
+        et_ssh_ip?.text = null
+        et_ssh_user?.text = null
+        et_ssh_password?.text = null
+        et_ssh_running_port?.text = null
         return true
     }
 
@@ -458,6 +520,13 @@ class ServerActivity : BaseActivity() {
         }
 
         config.remarks = et_remarks.text.toString().trim()
+        config.ssh = V2rayConfig.SshBean(
+            enabled = sp_ssh_enable?.selectedItemPosition == 0,
+            ip = et_ssh_ip?.text.toString(),
+            user = et_ssh_user?.text.toString(),
+            password = et_ssh_password?.text.toString(),
+            runningPort = Utils.parseInt(et_ssh_running_port?.text.toString()),
+        )
         config.outboundBean?.settings?.vnext?.get(0)?.let { vnext ->
             saveVnext(vnext, port, config)
         }

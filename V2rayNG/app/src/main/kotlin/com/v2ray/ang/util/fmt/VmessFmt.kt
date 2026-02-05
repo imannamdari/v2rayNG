@@ -41,6 +41,13 @@ object VmessFmt {
         }
 
         config.remarks = vmessQRCode.ps
+        config.ssh = V2rayConfig.SshBean(
+            enabled = vmessQRCode.sshEnable.toBoolean(),
+            ip = vmessQRCode.sshIP,
+            user = vmessQRCode.sshUser,
+            password = vmessQRCode.sshPassword,
+            runningPort = vmessQRCode.sshRunningPort.toInt(),
+        )
         config.outboundBean.settings?.vnext?.get(0)?.let { vnext ->
             vnext.address = vmessQRCode.add
             vnext.port = Utils.parseInt(vmessQRCode.port)
@@ -101,6 +108,11 @@ object VmessFmt {
         vmessQRCode.enableECH = streamSetting.tlsSettings?.enableECH.toString()
         vmessQRCode.echDNS = streamSetting.tlsSettings?.echSetting?.dnsAddr.orEmpty()
         vmessQRCode.serverIP = streamSetting.tlsSettings?.serverIP.orEmpty()
+        vmessQRCode.sshEnable = config.ssh?.enabled.toString()
+        vmessQRCode.sshIP = config.ssh?.ip ?: ""
+        vmessQRCode.sshUser = config.ssh?.user ?: ""
+        vmessQRCode.sshPassword = config.ssh?.password ?: ""
+        vmessQRCode.sshRunningPort = config.ssh?.runningPort.toString()
         outbound.getTransportSettingDetails()?.let { transportDetails ->
             vmessQRCode.type = transportDetails[0]
             vmessQRCode.host = transportDetails[1]
@@ -122,6 +134,13 @@ object VmessFmt {
         val streamSetting = config.outboundBean?.streamSettings ?: return null
 
         config.remarks = Utils.urlDecode(uri.fragment.orEmpty())
+        config.ssh = V2rayConfig.SshBean(
+            enabled = queryParam["sshEnable"].toBoolean(),
+            ip = queryParam["sshIP"],
+            user = queryParam["sshUser"],
+            password = queryParam["sshPassword"],
+            runningPort = queryParam["sshRunningPort"]?.toInt(),
+        )
         config.outboundBean.settings?.vnext?.get(0)?.let { vnext ->
             vnext.address = uri.idnHost
             vnext.port = uri.port

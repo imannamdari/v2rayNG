@@ -25,7 +25,8 @@ data class V2rayConfig(
     var fakedns: Any? = null,
     val browserForwarder: Any? = null,
     var observatory: Any? = null,
-    var burstObservatory: Any? = null
+    var burstObservatory: Any? = null,
+    var ssh: SshBean? = null
 ) {
     companion object {
         const val DEFAULT_PORT = 443
@@ -257,7 +258,8 @@ data class V2rayConfig(
                 var tcpFastOpen: Boolean? = null,
                 var tproxy: String? = null,
                 var mark: Int? = null,
-                var dialerProxy: String? = null
+                var dialerProxy: String? = null,
+                var domainStrategy: String? = null
             )
 
             data class TlsSettingsBean(
@@ -638,6 +640,14 @@ data class V2rayConfig(
         var ipPool: String = "198.18.0.0/15",
         var poolSize: Int = 10000
     ) // roughly 10 times smaller than total ip pool
+
+    data class SshBean(
+        var enabled: Boolean? = null,
+        var ip: String? = null,
+        val user: String? = null,
+        val password: String? = null,
+        val runningPort: Int? = null,
+    )
 
     fun getProxyOutbound(): OutboundBean? {
         outbounds.forEach { outbound ->
