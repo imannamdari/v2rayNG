@@ -77,8 +77,7 @@ object VmessFmt {
             vmessQRCode.serverIP,
             fingerprint,
             vmessQRCode.alpn,
-            vmessQRCode.enableECH == "true",
-            vmessQRCode.echDNS,
+            vmessQRCode.echConfigList,
             null,
             null,
             null
@@ -105,8 +104,7 @@ object VmessFmt {
         vmessQRCode.alpn =
             Utils.removeWhiteSpace(streamSetting.tlsSettings?.alpn?.joinToString()).orEmpty()
         vmessQRCode.fp = streamSetting.tlsSettings?.fingerprint.orEmpty()
-        vmessQRCode.enableECH = streamSetting.tlsSettings?.enableECH.toString()
-        vmessQRCode.echDNS = streamSetting.tlsSettings?.echSetting?.dnsAddr.orEmpty()
+        vmessQRCode.echConfigList = streamSetting.tlsSettings?.echConfigList.orEmpty()
         vmessQRCode.serverIP = streamSetting.tlsSettings?.serverIP.orEmpty()
         vmessQRCode.sshEnable = config.ssh?.enabled.toString()
         vmessQRCode.sshIP = config.ssh?.ip ?: ""
@@ -170,8 +168,7 @@ object VmessFmt {
             queryParam["fp"].orEmpty(),
             queryParam["serverIP"].orEmpty(),
             queryParam["alpn"],
-            queryParam["enableECH"] == "true",
-            queryParam["echDNS"].orEmpty(),
+            queryParam["echConfigList"].orEmpty(),
             null,
             null,
             null

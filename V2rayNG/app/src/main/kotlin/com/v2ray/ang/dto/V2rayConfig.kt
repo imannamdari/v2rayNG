@@ -280,11 +280,9 @@ data class V2rayConfig(
                 var shortId: String? = null,
                 var spiderX: String? = null,
                 // ECH settings
-                val enableECH: Boolean = false,
                 val serverIP: String = "",
-                var echSetting: ECHSettingBean = ECHSettingBean(),
+                var echConfigList: String = "",
                 ) {
-                data class ECHSettingBean(var dnsAddr: String = "1.1.1.1:53")
             }
 
             data class QuicSettingBean(
@@ -397,7 +395,7 @@ data class V2rayConfig(
 
             fun populateTlsSettings(
                 streamSecurity: String, allowInsecure: Boolean, sni: String, serverIP: String, fingerprint: String?, alpns: String?,
-                enableECH: Boolean, echDNS: String, publicKey: String?, shortId: String?, spiderX: String?
+                echConfigList: String, publicKey: String?, shortId: String?, spiderX: String?
             ) {
                 security = streamSecurity
                 val tlsSetting = TlsSettingsBean(
@@ -406,8 +404,7 @@ data class V2rayConfig(
                     serverIP = serverIP,
                     fingerprint = fingerprint,
                     alpn = if (alpns.isNullOrEmpty()) null else alpns.split(",").map { it.trim() }.filter { it.isNotEmpty() },
-                    enableECH = enableECH,
-                    echSetting = TlsSettingsBean.ECHSettingBean(dnsAddr = echDNS),
+                    echConfigList = echConfigList,
                     publicKey = publicKey,
                     shortId = shortId,
                     spiderX = spiderX

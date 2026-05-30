@@ -173,37 +173,19 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/l9"
+        android:id="@+id/con_ech_config_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
 
         <TextView
-            android:id="@+id/server_lab_enable_ech"
+            android:id="@+id/textView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/server_lab_enable_ech" />
-
-        <Spinner
-            android:id="@+id/sp_enable_ech"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:entries="@array/enablech" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/l10"
-        android:layout_width="match_parent"
-        android:layout_height="147dp"
-        android:orientation="vertical">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/server_lab_ech_dns" />
+            android:text="@string/server_lab_ech_config_list" />
 
         <EditText
-            android:id="@+id/et_ech_dns"
+            android:id="@+id/et_ech_config_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ems="10"
@@ -212,7 +194,7 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/l11"
+        android:id="@+id/con_server_ip"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
