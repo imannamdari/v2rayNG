@@ -52,8 +52,7 @@ object VlessFmt {
             queryParam["server_ip"].orEmpty(),
             queryParam["fp"].orEmpty(),
             queryParam["alpn"],
-            queryParam["enable_ech"] == "true",
-            queryParam["ech_dns"].orEmpty(),
+            queryParam["ech_config_list"].orEmpty(),
             queryParam["pbk"].orEmpty(),
             queryParam["sid"].orEmpty(),
             queryParam["spx"].orEmpty()

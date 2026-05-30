@@ -283,9 +283,8 @@
     <string name="title_pref_fragment_length">Fragment Length (min-max)</string>
     <string name="title_pref_fragment_interval">Fragment Interval (min-max)</string>
     <string name="title_pref_fragment_enabled">Enable Fragment</string>
-    <string name="server_lab_enable_ech">enable_ech</string>
-    <string name="server_lab_ech_dns">ech_dns</string>
     <string name="server_lab_server_ip">server_ip</string>
+    <string name="server_lab_ech_config_list">ech_config_list</string>
 
     <string-array name="share_method">
         <item>QRcode</item>

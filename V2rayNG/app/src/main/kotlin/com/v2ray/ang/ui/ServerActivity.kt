@@ -2,7 +2,6 @@ package com.v2ray.ang.ui
 
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -80,9 +79,6 @@ class ServerActivity : BaseActivity() {
     private val alpns: Array<out String> by lazy {
         resources.getStringArray(R.array.streamsecurity_alpn)
     }
-    private val enableECH: Array<out String> by lazy {
-        resources.getStringArray(R.array.enablech)
-    }
 
     // Kotlin synthetics was used, but since it is removed in 1.8. We switch to old manual approach.
     // We don't use AndroidViewBinding because, it is better to share similar logics for different
@@ -122,12 +118,10 @@ class ServerActivity : BaseActivity() {
     private val et_reserved3: EditText? by lazy { findViewById(R.id.et_reserved3) }
     private val et_local_address: EditText? by lazy { findViewById(R.id.et_local_address) }
     private val et_local_mtu: EditText? by lazy { findViewById(R.id.et_local_mtu) }
-    private val sp_enable_ech: Spinner? by lazy { findViewById(R.id.sp_enable_ech) }
-    private val container_enable_ech: LinearLayout? by lazy { findViewById(R.id.l6) }
-    private val et_ech_dns: EditText? by lazy { findViewById(R.id.et_ech_dns) }
-    private val container_ech_dns: LinearLayout? by lazy { findViewById(R.id.l7) }
+    private val et_ech_config_list: EditText? by lazy { findViewById(R.id.et_ech_config_list) }
+    private val container_ech_config_list: LinearLayout? by lazy { findViewById(R.id.con_ech_config_list) }
     private val et_server_ip: EditText? by lazy { findViewById(R.id.et_server_ip) }
-    private val container_server_ip: LinearLayout? by lazy { findViewById(R.id.l8) }
+    private val container_server_ip: LinearLayout? by lazy { findViewById(R.id.con_server_ip) }
     private val sp_ssh_enable: Spinner? by lazy { findViewById(R.id.sp_ssh_enable) }
     private val et_ssh_ip: EditText? by lazy { findViewById(R.id.et_ssh_ip) }
     private val et_ssh_user: EditText? by lazy { findViewById(R.id.et_ssh_user) }
@@ -252,8 +246,7 @@ class ServerActivity : BaseActivity() {
                     container_public_key?.visibility = View.GONE
                     container_short_id?.visibility = View.GONE
                     container_spider_x?.visibility = View.GONE
-                    container_enable_ech?.visibility = View.GONE
-                    container_ech_dns?.visibility = View.GONE
+                    container_ech_config_list?.visibility = View.GONE
                     container_server_ip?.visibility = View.GONE
                 } else {
                     container_sni?.visibility = View.VISIBLE
@@ -265,16 +258,14 @@ class ServerActivity : BaseActivity() {
                         container_public_key?.visibility = View.GONE
                         container_short_id?.visibility = View.GONE
                         container_spider_x?.visibility = View.GONE
-                        container_enable_ech?.visibility = View.VISIBLE
-                        container_ech_dns?.visibility = View.VISIBLE
+                        container_ech_config_list?.visibility = View.VISIBLE
                     } else {
                         container_allow_insecure?.visibility = View.GONE
                         container_alpn?.visibility = View.GONE
                         container_public_key?.visibility = View.VISIBLE
                         container_short_id?.visibility = View.VISIBLE
                         container_spider_x?.visibility = View.VISIBLE
-                        container_enable_ech?.visibility = View.GONE
-                        container_ech_dns?.visibility = View.GONE
+                        container_ech_config_list?.visibility = View.GONE
                     }
                 }
             }
@@ -399,13 +390,8 @@ class ServerActivity : BaseActivity() {
                     if (allowinsecure >= 0) {
                         sp_allow_insecure?.setSelection(allowinsecure)
                     }
-                    container_enable_ech?.visibility = View.VISIBLE
-                    val enable_ech = Utils.arrayFind(enableECH, tlsSetting.enableECH.toString())
-                    if (enable_ech >= 0) {
-                        sp_enable_ech?.setSelection(enable_ech)
-                    }
-                    container_ech_dns?.visibility = View.VISIBLE
-                    et_ech_dns?.text = Utils.getEditable(tlsSetting.echSetting.dnsAddr)
+                    container_ech_config_list?.visibility = View.VISIBLE
+                    et_ech_config_list?.text = Utils.getEditable(tlsSetting.echConfigList)
                     container_public_key?.visibility = View.GONE
                     container_short_id?.visibility = View.GONE
                     container_spider_x?.visibility = View.GONE
@@ -427,8 +413,7 @@ class ServerActivity : BaseActivity() {
                 container_public_key?.visibility = View.GONE
                 container_short_id?.visibility = View.GONE
                 container_spider_x?.visibility = View.GONE
-                container_enable_ech?.visibility = View.GONE
-                container_ech_dns?.visibility = View.GONE
+                container_ech_config_list?.visibility = View.GONE
             }
         }
         val network = Utils.arrayFind(networks, streamSetting.network)
@@ -457,8 +442,7 @@ class ServerActivity : BaseActivity() {
         sp_allow_insecure?.setSelection(0)
         et_sni?.text = null
         et_server_ip?.text = null
-        sp_enable_ech?.setSelection(0)
-        et_ech_dns?.text = null
+        et_ech_config_list?.text = null
 
         //et_security.text = null
         sp_flow?.setSelection(0)
@@ -622,8 +606,7 @@ class ServerActivity : BaseActivity() {
         val publicKey = et_public_key?.text?.toString()?.trim() ?: return
         val shortId = et_short_id?.text?.toString()?.trim() ?: return
         val spiderX = et_spider_x?.text?.toString()?.trim() ?: return
-        val enableECHField = sp_enable_ech?.selectedItemPosition ?: return
-        val echDNSField = et_ech_dns?.text?.toString()?.trim() ?: return
+        val echConfigList = et_ech_config_list?.text?.toString()?.trim() ?: return
         val serverIPField = et_server_ip?.text?.toString()?.trim() ?: return
 
         var sni = streamSetting.populateTransportSettings(
@@ -647,11 +630,6 @@ class ServerActivity : BaseActivity() {
             allowinsecures[allowInsecureField].toBoolean()
         }
 
-        var enableECHVal = false
-        if (!enableECH[enableECHField].isBlank()) {
-            enableECHVal = enableECH[enableECHField].toBoolean()
-        }
-
         streamSetting.populateTlsSettings(
             streamSecurity = streamSecuritys[streamSecurity],
             allowInsecure = allowInsecure,
@@ -661,8 +639,7 @@ class ServerActivity : BaseActivity() {
             publicKey = publicKey,
             shortId = shortId,
             spiderX = spiderX,
-            enableECH = enableECHVal,
-            echDNS = echDNSField,
+            echConfigList = echConfigList,
             serverIP = serverIPField)
     }
 
